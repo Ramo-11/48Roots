@@ -200,20 +200,14 @@
     display: flex;
     gap: var(--spacing-xs);
     align-items: center;
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
 }
 
 .product-sizes::before {
     content: 'Sizes:';
-    font-size: var(--font-size-xs);
-    color: var(--text-secondary);
+    font-weight: 600;
     margin-right: var(--spacing-xs);
-}
-
-.product-size-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background-color: var(--text-secondary);
 }
 
 .product-quick-view {

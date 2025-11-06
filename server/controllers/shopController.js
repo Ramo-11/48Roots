@@ -36,7 +36,9 @@ exports.getProducts = async (req, res) => {
 
         const products = await Product.find(filter)
             .sort(sortOption)
-            .select('name slug description price compareAtPrice images category tags isFeatured')
+            .select(
+                'name slug description price compareAtPrice images category tags isFeatured variants'
+            )
             .lean();
 
         res.json({
@@ -56,7 +58,7 @@ exports.getFeaturedProducts = async (req, res) => {
     try {
         const products = await Product.find({ isActive: true, isFeatured: true })
             .limit(8)
-            .select('name slug description price compareAtPrice images category')
+            .select('name slug description price compareAtPrice images category variants')
             .lean();
 
         res.json({

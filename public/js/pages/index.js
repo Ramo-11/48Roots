@@ -68,7 +68,15 @@ function renderProducts(products) {
                     
                     <div class="product-footer">
                         <div class="product-sizes">
-                            ${[1, 2, 3, 4].map(() => '<span class="product-size-dot"></span>').join('')}
+                            ${
+                                product.variants
+                                    ? product.variants
+                                          .map((v) => v.size)
+                                          .filter((v, i, arr) => arr.indexOf(v) === i)
+                                          .slice(0, 5)
+                                          .join(', ')
+                                    : 'S, M, L, XL'
+                            }
                         </div>
                         <span class="product-quick-view">View Details →</span>
                     </div>

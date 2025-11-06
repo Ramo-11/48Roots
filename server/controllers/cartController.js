@@ -15,7 +15,7 @@ const getOrCreateCart = async (sessionId) => {
 exports.addToCart = async (req, res) => {
     try {
         const { productId, variant, quantity } = req.body;
-        const sessionId = req.cookies.sessionId || req.sessionID;
+        const sessionId = req.session.id;
 
         if (!sessionId) {
             return res.status(400).json({
@@ -78,7 +78,7 @@ exports.addToCart = async (req, res) => {
 exports.updateCartItem = async (req, res) => {
     try {
         const { productId, variant, quantity } = req.body;
-        const sessionId = req.cookies.sessionId || req.sessionID;
+        const sessionId = req.session.id;
 
         if (!sessionId) {
             return res.status(400).json({
@@ -143,7 +143,7 @@ exports.updateCartItem = async (req, res) => {
 exports.removeFromCart = async (req, res) => {
     try {
         const { productId, variant } = req.body;
-        const sessionId = req.cookies.sessionId || req.sessionID;
+        const sessionId = req.session.id;
 
         if (!sessionId) {
             return res.status(400).json({
@@ -184,7 +184,7 @@ exports.removeFromCart = async (req, res) => {
 
 exports.getCartData = async (req, res) => {
     try {
-        const sessionId = req.cookies.sessionId || req.sessionID;
+        const sessionId = req.session.id;
 
         if (!sessionId) {
             return res.json({

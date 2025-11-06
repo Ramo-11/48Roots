@@ -52,7 +52,19 @@ document.addEventListener('DOMContentLoaded', () => {
     );
 
     initializeSearch();
+    initializeCart();
 });
+
+function initializeCart() {
+    const cartBtn = document.getElementById('cartBtn');
+    if (cartBtn) {
+        cartBtn.addEventListener('click', () => {
+            window.location.href = '/cart';
+        });
+    }
+
+    updateCartCount();
+}
 
 function initializeSearch() {
     const searchInput = document.getElementById('navSearchInput');
@@ -160,3 +172,22 @@ function hideSearchResults() {
         resultsContainer.classList.remove('active');
     }
 }
+
+async function updateCartCount() {
+    try {
+        const response = await fetch('/api/cart');
+        const result = await response.json();
+
+        if (result.success && result.data.items) {
+            const count = result.data.items.reduce((total, item) => total + item.quantity, 0);
+            const cartCountEl = document.getElementById('cartCount');
+            if (cartCountEl) {
+                cartCountEl.textContent = count;
+            }
+        }
+    } catch (error) {
+        console.error('Error updating cart count:', error);
+    }
+}
+
+window.updateCartCount = updateCartCount;

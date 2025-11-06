@@ -157,24 +157,17 @@ async function addToCart() {
 
         if (result.success) {
             Common.showNotification('Added to cart!', 'success');
-            updateCartCount();
+            if (window.updateCartCount) {
+                window.updateCartCount();
+            }
         } else {
-            Common.showNotification(result.message || 'Failed to add to cart', 'error');
+            throw new Error(result.message || 'Failed to add to cart');
         }
     } catch (error) {
         console.error('Error adding to cart:', error);
         Common.showNotification('Failed to add to cart', 'error');
     } finally {
         Common.hideLoading(btn);
-    }
-}
-
-function updateCartCount() {
-    const cart = Common.localStorage.get('cart') || { items: [] };
-    const count = cart.items.reduce((total, item) => total + item.quantity, 0);
-    const cartCountEl = document.getElementById('cartCount');
-    if (cartCountEl) {
-        cartCountEl.textContent = count;
     }
 }
 

@@ -104,10 +104,17 @@ function renderProducts(products) {
                   )
                 : 0;
 
+            let badges = '';
+            if (hasDiscount) {
+                badges += `<span class="product-badge sale">-${discountPercent}%</span>`;
+            }
+            if (product.isFeatured) {
+                badges += `<span class="product-badge new">Featured</span>`;
+            }
+
             return `
             <div class="product-card" onclick="window.location.href='/product/${product.slug}'">
-                ${hasDiscount ? `<span class="product-badge sale">-${discountPercent}%</span>` : ''}
-                ${product.isFeatured ? '<span class="product-badge new">Featured</span>' : ''}
+                ${badges}
                 
                 <div class="product-image-wrapper">
                     <img src="${product.images[0]?.url || '/images/placeholder.png'}" 
@@ -130,7 +137,15 @@ function renderProducts(products) {
                     
                     <div class="product-footer">
                         <div class="product-sizes">
-                            ${[1, 2, 3, 4].map(() => '<span class="product-size-dot"></span>').join('')}
+                            ${
+                                product.variants
+                                    ? product.variants
+                                          .map((v) => v.size)
+                                          .filter((v, i, arr) => arr.indexOf(v) === i)
+                                          .slice(0, 5)
+                                          .join(', ')
+                                    : 'S, M, L, XL'
+                            }
                         </div>
                         <span class="product-quick-view">View Details →</span>
                     </div>

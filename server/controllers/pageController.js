@@ -8,7 +8,7 @@ exports.getHome = async (req, res) => {
             title: '48 Roots - Palestinian Heritage Apparel',
             description:
                 'Shop authentic Palestinian-inspired clothing. Every purchase supports Palestine.',
-            additionalCSS: ['index.css'],
+            additionalCSS: ['index.css', 'shop.css'],
             additionalJS: ['pages/index.js'],
             layout: 'layout',
         });

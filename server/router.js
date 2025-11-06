@@ -67,8 +67,8 @@ router.get('/terms-of-service', getTermsOfService);
 
 router.get('/api/products', getProducts);
 router.get('/api/products/featured', getFeaturedProducts);
-router.get('/api/products/:slug', getProductBySlug);
 router.get('/api/products/related/:productId', getRelatedProducts);
+router.get('/api/products/:slug', getProductBySlug);
 
 router.post('/api/cart/add', addToCart);
 router.post('/api/cart/update', updateCartItem);
