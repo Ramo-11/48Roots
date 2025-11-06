@@ -1,0 +1,184 @@
+<section class="legal-page">
+    <div class="container legal-content">
+        <h1>Size Guide</h1>
+        <p class="intro">Find your perfect fit with our detailed size charts</p>
+
+        <h2>T-Shirts</h2>
+        <div class="size-table-wrapper">
+            <table class="size-table">
+                <thead>
+                    <tr>
+                        <th>Size</th>
+                        <th>Chest (inches)</th>
+                        <th>Length (inches)</th>
+                        <th>Sleeve (inches)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>XS</td>
+                        <td>31-34</td>
+                        <td>27</td>
+                        <td>8</td>
+                    </tr>
+                    <tr>
+                        <td>S</td>
+                        <td>34-37</td>
+                        <td>28</td>
+                        <td>8.5</td>
+                    </tr>
+                    <tr>
+                        <td>M</td>
+                        <td>38-41</td>
+                        <td>29</td>
+                        <td>9</td>
+                    </tr>
+                    <tr>
+                        <td>L</td>
+                        <td>42-45</td>
+                        <td>30</td>
+                        <td>9.5</td>
+                    </tr>
+                    <tr>
+                        <td>XL</td>
+                        <td>46-49</td>
+                        <td>31</td>
+                        <td>10</td>
+                    </tr>
+                    <tr>
+                        <td>2XL</td>
+                        <td>50-53</td>
+                        <td>32</td>
+                        <td>10.5</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h2>Hoodies & Sweatshirts</h2>
+        <div class="size-table-wrapper">
+            <table class="size-table">
+                <thead>
+                    <tr>
+                        <th>Size</th>
+                        <th>Chest (inches)</th>
+                        <th>Length (inches)</th>
+                        <th>Sleeve (inches)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>S</td>
+                        <td>36-38</td>
+                        <td>27</td>
+                        <td>33</td>
+                    </tr>
+                    <tr>
+                        <td>M</td>
+                        <td>39-41</td>
+                        <td>28</td>
+                        <td>34</td>
+                    </tr>
+                    <tr>
+                        <td>L</td>
+                        <td>42-44</td>
+                        <td>29</td>
+                        <td>35</td>
+                    </tr>
+                    <tr>
+                        <td>XL</td>
+                        <td>45-48</td>
+                        <td>30</td>
+                        <td>36</td>
+                    </tr>
+                    <tr>
+                        <td>2XL</td>
+                        <td>49-52</td>
+                        <td>31</td>
+                        <td>37</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h2>How to Measure</h2>
+        <div class="measurement-guide">
+            <div class="measurement-item">
+                <h3>Chest</h3>
+                <p>Measure around the fullest part of your chest, keeping the tape level under your arms.</p>
+            </div>
+            <div class="measurement-item">
+                <h3>Length</h3>
+                <p>Measure from the highest point of the shoulder down to the hem.</p>
+            </div>
+            <div class="measurement-item">
+                <h3>Sleeve</h3>
+                <p>Measure from the center back of your neck, across your shoulder, and down to your wrist.</p>
+            </div>
+        </div>
+
+        <div class="contact-box">
+            <h3>Need sizing help?</h3>
+            <p>Contact us at <strong>support@48roots.com</strong> and we'll help you find the perfect fit.</p>
+        </div>
+    </div>
+</section>
+
+<style>
+.size-table-wrapper {
+    overflow-x: auto;
+    margin: var(--spacing-xl) 0;
+}
+
+.size-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.size-table th,
+.size-table td {
+    padding: var(--spacing-md);
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.size-table th {
+    background-color: var(--primary-color);
+    color: var(--text-white);
+    font-weight: 600;
+}
+
+.size-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.size-table tbody tr:hover {
+    background-color: var(--bg-primary);
+}
+
+.measurement-guide {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-xl);
+    margin: var(--spacing-2xl) 0;
+}
+
+.measurement-item h3 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-sm);
+}
+
+.measurement-item p {
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .measurement-guide {
+        grid-template-columns: 1fr;
+    }
+}
+</style>

@@ -1,0 +1,69 @@
+.impact-hero {
+    background-color: var(--bg-secondary);
+    padding: var(--spacing-3xl) 0;
+    text-align: center;
+}
+
+.impact-hero h1 {
+    margin-bottom: var(--spacing-md);
+}
+
+.impact-hero p {
+    font-size: var(--font-size-xl);
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.impact-details {
+    padding: var(--spacing-3xl) 0;
+}
+
+.donation-info,
+.partners,
+.transparency {
+    margin-bottom: var(--spacing-3xl);
+}
+
+.donation-info h2,
+.partners h2,
+.transparency h2 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-lg);
+}
+
+.donation-info p,
+.transparency p {
+    font-size: var(--font-size-lg);
+    line-height: 1.8;
+    color: var(--text-secondary);
+}
+
+.partners-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-xl);
+    margin-top: var(--spacing-xl);
+}
+
+.partner-card {
+    padding: var(--spacing-xl);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    background-color: var(--bg-secondary);
+}
+
+.partner-card h3 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-md);
+}
+
+.partner-card p {
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .partners-grid {
+        grid-template-columns: 1fr;
+    }
+}

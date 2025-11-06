@@ -1,0 +1,142 @@
+let currentFilters = {
+    categories: [],
+    sizes: [],
+    sort: 'featured',
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadProducts();
+    initializeFilters();
+});
+
+function initializeFilters() {
+    const categoryCheckboxes = document.querySelectorAll('input[name="category"]');
+    const sizeCheckboxes = document.querySelectorAll('input[name="size"]');
+    const sortSelect = document.getElementById('sortSelect');
+    const clearBtn = document.getElementById('clearFilters');
+
+    categoryCheckboxes.forEach((checkbox) => {
+        checkbox.addEventListener('change', () => {
+            updateFilters();
+            loadProducts();
+        });
+    });
+
+    sizeCheckboxes.forEach((checkbox) => {
+        checkbox.addEventListener('change', () => {
+            updateFilters();
+            loadProducts();
+        });
+    });
+
+    sortSelect.addEventListener('change', () => {
+        currentFilters.sort = sortSelect.value;
+        loadProducts();
+    });
+
+    clearBtn.addEventListener('click', () => {
+        categoryCheckboxes.forEach((cb) => (cb.checked = false));
+        sizeCheckboxes.forEach((cb) => (cb.checked = false));
+        sortSelect.value = 'featured';
+        currentFilters = {
+            categories: [],
+            sizes: [],
+            sort: 'featured',
+        };
+        loadProducts();
+    });
+}
+
+function updateFilters() {
+    currentFilters.categories = Array.from(
+        document.querySelectorAll('input[name="category"]:checked')
+    ).map((cb) => cb.value);
+
+    currentFilters.sizes = Array.from(document.querySelectorAll('input[name="size"]:checked')).map(
+        (cb) => cb.value
+    );
+}
+
+async function loadProducts() {
+    const params = new URLSearchParams();
+
+    if (currentFilters.categories.length) {
+        params.append('categories', currentFilters.categories.join(','));
+    }
+    if (currentFilters.sizes.length) {
+        params.append('sizes', currentFilters.sizes.join(','));
+    }
+    params.append('sort', currentFilters.sort);
+
+    try {
+        const response = await fetch(`/api/products?${params}`);
+        const result = await response.json();
+
+        if (result.success) {
+            renderProducts(result.data);
+        }
+    } catch (error) {
+        console.error('Error loading products:', error);
+        Common.showNotification('Failed to load products', 'error');
+    }
+}
+
+function renderProducts(products) {
+    const container = document.getElementById('productsGrid');
+    if (!container) return;
+
+    if (!products.length) {
+        container.innerHTML = `
+            <div class="no-products">
+                <i class="fas fa-box-open"></i>
+                <p>No products found matching your filters.</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = products
+        .map((product) => {
+            const hasDiscount = product.compareAtPrice && product.compareAtPrice > product.price;
+            const discountPercent = hasDiscount
+                ? Math.round(
+                      ((product.compareAtPrice - product.price) / product.compareAtPrice) * 100
+                  )
+                : 0;
+
+            return `
+            <div class="product-card" onclick="window.location.href='/product/${product.slug}'">
+                ${hasDiscount ? `<span class="product-badge sale">-${discountPercent}%</span>` : ''}
+                ${product.isFeatured ? '<span class="product-badge new">Featured</span>' : ''}
+                
+                <div class="product-image-wrapper">
+                    <img src="${product.images[0]?.url || '/images/placeholder.png'}" 
+                         alt="${product.images[0]?.alt || product.name}" 
+                         class="product-image">
+                </div>
+                
+                <div class="product-info">
+                    <div class="product-category">${product.category}</div>
+                    <h3 class="product-name">${product.name}</h3>
+                    
+                    <div class="product-pricing">
+                        <span class="product-price">$${product.price.toFixed(2)}</span>
+                        ${
+                            hasDiscount
+                                ? `<span class="product-compare-price">$${product.compareAtPrice.toFixed(2)}</span>`
+                                : ''
+                        }
+                    </div>
+                    
+                    <div class="product-footer">
+                        <div class="product-sizes">
+                            ${[1, 2, 3, 4].map(() => '<span class="product-size-dot"></span>').join('')}
+                        </div>
+                        <span class="product-quick-view">View Details →</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        })
+        .join('');
+}

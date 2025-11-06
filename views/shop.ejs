@@ -1,0 +1,76 @@
+<section class="shop-header">
+    <div class="container">
+        <h1>Shop All</h1>
+        <p>Explore our full collection of Palestinian-inspired apparel</p>
+    </div>
+</section>
+
+<section class="shop-content">
+    <div class="container">
+        <div class="shop-layout">
+            <aside class="shop-filters">
+                <div class="filter-group">
+                    <h3 class="filter-title">Category</h3>
+                    <div class="filter-options">
+                        <label class="filter-option">
+                            <input type="checkbox" name="category" value="tshirts" />
+                            <span>T-Shirts</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" name="category" value="hoodies" />
+                            <span>Hoodies</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" name="category" value="sweatshirts" />
+                            <span>Sweatshirts</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" name="category" value="accessories" />
+                            <span>Accessories</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <h3 class="filter-title">Size</h3>
+                    <div class="filter-options">
+                        <label class="filter-option">
+                            <input type="checkbox" name="size" value="S" />
+                            <span>Small</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" name="size" value="M" />
+                            <span>Medium</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" name="size" value="L" />
+                            <span>Large</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" name="size" value="XL" />
+                            <span>X-Large</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <h3 class="filter-title">Sort By</h3>
+                    <select id="sortSelect" class="form-select">
+                        <option value="featured">Featured</option>
+                        <option value="newest">Newest</option>
+                        <option value="price-low">Price: Low to High</option>
+                        <option value="price-high">Price: High to Low</option>
+                    </select>
+                </div>
+
+                <button class="btn btn-secondary" id="clearFilters">Clear Filters</button>
+            </aside>
+
+            <div class="shop-products">
+                <div class="products-grid" id="productsGrid">
+                    <!-- Products loaded dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

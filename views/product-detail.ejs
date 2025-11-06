@@ -1,0 +1,58 @@
+<section class="product-detail">
+    <div class="container">
+        <div class="product-layout">
+            <div class="product-images">
+                <div class="product-main-image">
+                    <img id="mainImage" src="" alt="" class="main-image" />
+                </div>
+                <div class="product-thumbnails" id="thumbnails">
+                    <!-- Thumbnails loaded dynamically -->
+                </div>
+            </div>
+
+            <div class="product-details">
+                <h1 id="productName" class="product-title"></h1>
+                <div class="product-price-section">
+                    <span id="productPrice" class="product-price"></span>
+                    <span id="productComparePrice" class="product-compare-price hidden"></span>
+                </div>
+
+                <div id="productDescription" class="product-description"></div>
+
+                <div class="product-options">
+                    <div class="option-group">
+                        <label class="option-label">Size</label>
+                        <div id="sizeOptions" class="size-options">
+                            <!-- Size options loaded dynamically -->
+                        </div>
+                    </div>
+
+                    <div class="option-group">
+                        <label class="option-label">Quantity</label>
+                        <div class="quantity-selector">
+                            <button class="quantity-btn" id="decreaseQty">-</button>
+                            <input type="number" id="quantity" value="1" min="1" readonly />
+                            <button class="quantity-btn" id="increaseQty">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary btn-lg" id="addToCartBtn">Add to Cart</button>
+
+                <div class="product-meta">
+                    <p><strong>Category:</strong> <span id="productCategory"></span></p>
+                    <p><strong>SKU:</strong> <span id="productSku"></span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="related-products">
+    <div class="container">
+        <h2 class="section-title">You May Also Like</h2>
+        <div class="products-grid" id="relatedProducts">
+            <!-- Related products loaded dynamically -->
+        </div>
+    </div>
+</section>
