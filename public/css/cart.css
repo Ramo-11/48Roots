@@ -135,6 +135,24 @@
     font-weight: 700;
 }
 
+.donation-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+    margin: var(--spacing-lg) 0;
+    background-color: rgba(239, 68, 68, 0.1);
+    border-left: 3px solid var(--danger-color);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+}
+
+.donation-info i {
+    color: var(--danger-color);
+    font-size: var(--font-size-base);
+}
+
 .cart-summary .btn {
     width: 100%;
     margin-bottom: var(--spacing-md);

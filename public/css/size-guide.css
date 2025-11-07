@@ -1,0 +1,70 @@
+.size-guide-page {
+    padding: var(--spacing-3xl) 0;
+}
+
+.size-guide-page h1 {
+    margin-bottom: var(--spacing-md);
+}
+
+.intro {
+    text-align: center;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-3xl);
+}
+
+.size-table-wrapper {
+    overflow-x: auto;
+    margin: var(--spacing-xl) 0;
+}
+
+.size-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.size-table th,
+.size-table td {
+    padding: var(--spacing-md);
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.size-table th {
+    background-color: var(--primary-color);
+    color: var(--text-white);
+    font-weight: 600;
+}
+
+.size-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.size-table tbody tr:hover {
+    background-color: var(--bg-primary);
+}
+
+.measurement-guide {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-xl);
+    margin: var(--spacing-2xl) 0;
+}
+
+.measurement-item h3 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-sm);
+}
+
+.measurement-item p {
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .measurement-guide {
+        grid-template-columns: 1fr;
+    }
+}

@@ -205,7 +205,7 @@ exports.getSizeGuide = async (req, res) => {
         res.render('size-guide', {
             title: 'Size Guide - 48 Roots',
             description: 'Find your perfect fit with our size guide',
-            additionalCSS: ['size-guide.css'],
+            additionalCSS: ['size-guide.css', 'legal.css'],
             layout: 'layout',
         });
     } catch (error) {

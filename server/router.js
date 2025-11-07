@@ -35,7 +35,11 @@ const {
     getCartData,
 } = require('./controllers/cartController');
 
-// const { createCheckoutSession, confirmOrder } = require('./controllers/checkoutController');
+const {
+    createCheckoutSession,
+    confirmOrder,
+    calculateShipping,
+} = require('./controllers/checkoutController');
 
 // const { submitContactForm } = require('./controllers/contactController');
 
@@ -81,5 +85,9 @@ router.get('/api/cart', getCartData);
 // router.post('/api/contact', submitContactForm);
 
 router.get('/api/search', searchProducts);
+
+router.post('/api/checkout/create-session', createCheckoutSession);
+router.post('/api/checkout/confirm', confirmOrder);
+router.post('/api/checkout/calculate-shipping', calculateShipping);
 
 module.exports = router;

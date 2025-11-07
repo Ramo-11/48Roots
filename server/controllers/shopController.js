@@ -118,8 +118,8 @@ exports.getRelatedProducts = async (req, res) => {
             category: product.category,
             isActive: true,
         })
-            .limit(4)
-            .select('name slug price images')
+            .limit(8)
+            .select('name slug price compareAtPrice images category variants isFeatured')
             .lean();
 
         res.json({

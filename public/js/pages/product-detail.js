@@ -94,7 +94,7 @@ function selectSize(size) {
 
     const variant = product.variants.find((v) => v.size === size);
     if (variant?.sku) {
-        document.getElementById('productSku').textContent = variant.sku;
+        document.getElementById('productSku').textContent = 'SKU:' + variant.sku;
     }
 }
 
@@ -179,21 +179,57 @@ async function loadRelatedProducts() {
         if (result.success && result.data.length) {
             const container = document.getElementById('relatedProducts');
             container.innerHTML = result.data
-                .map(
-                    (p) => `
-                <div class="product-card" onclick="window.location.href='/product/${p.slug}'">
-                    <img src="${p.images[0]?.url || '/images/placeholder.png'}" 
-                         alt="${p.images[0]?.alt || p.name}" 
-                         class="product-image">
-                    <div class="product-info">
-                        <h3 class="product-name">${p.name}</h3>
-                        <div class="product-pricing">
-                            <span class="product-price">$${p.price.toFixed(2)}</span>
+                .map((p) => {
+                    const hasDiscount = p.compareAtPrice && p.compareAtPrice > p.price;
+                    const discountPercent = hasDiscount
+                        ? Math.round(((p.compareAtPrice - p.price) / p.compareAtPrice) * 100)
+                        : 0;
+
+                    let badges = '';
+                    if (hasDiscount) {
+                        badges += `<span class="product-badge sale">-${discountPercent}%</span>`;
+                    }
+                    if (p.isFeatured) {
+                        badges += `<span class="product-badge new">Featured</span>`;
+                    }
+
+                    return `
+                        <div class="product-card" onclick="window.location.href='/product/${p.slug}'">
+                            ${badges}
+                            
+                            <div class="product-image-wrapper">
+                                <img src="${p.images[0]?.url || '/images/placeholder.png'}" 
+                                     alt="${p.images[0]?.alt || p.name}" 
+                                     class="product-image">
+                            </div>
+                            
+                            <div class="product-info">
+                                <div class="product-category">${p.category}</div>
+                                <h3 class="product-name">${p.name}</h3>
+                                
+                                <div class="product-pricing">
+                                    <span class="product-price">$${p.price.toFixed(2)}</span>
+                                    ${hasDiscount ? `<span class="product-compare-price">$${p.compareAtPrice.toFixed(2)}</span>` : ''}
+                                </div>
+                                
+                                <div class="product-footer">
+                                    <div class="product-sizes">
+                                        ${
+                                            p.variants
+                                                ? p.variants
+                                                      .map((v) => v.size)
+                                                      .filter((v, i, arr) => arr.indexOf(v) === i)
+                                                      .slice(0, 5)
+                                                      .join(', ')
+                                                : 'S, M, L, XL'
+                                        }
+                                    </div>
+                                    <span class="product-quick-view">View Details →</span>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            `
-                )
+                    `;
+                })
                 .join('');
         }
     } catch (error) {

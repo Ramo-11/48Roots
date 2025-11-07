@@ -17,6 +17,7 @@ async function loadCart() {
         if (result.success) {
             cart = result.data;
             renderCart();
+            updateCartCount();
         }
     } catch (error) {
         console.error('Error loading cart:', error);
@@ -141,26 +142,26 @@ async function removeItem(index) {
 
 async function updateSummary() {
     const subtotal = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-
     const donationAmount = await getDonationAmount();
-    const total = subtotal + donationAmount;
 
     document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
-    document.getElementById('donation').textContent = `$${donationAmount.toFixed(2)}`;
-    document.getElementById('total').textContent = `$${total.toFixed(2)}`;
+    document.getElementById('total').textContent = `$${subtotal.toFixed(2)}`;
+    document.getElementById('donationInfo').textContent =
+        `We will donate $${donationAmount.toFixed(2)} to Palestine from this purchase`;
 }
 
 async function getDonationAmount() {
     try {
         const response = await fetch('/api/settings/donation_per_purchase');
         const result = await response.json();
-        return result.success ? result.data : 5.0;
+        return result.success ? result.data : 0.0;
     } catch (error) {
         return 5.0;
     }
 }
 
 function updateCartCount() {
+    if (!cart.items) return;
     const count = cart.items.reduce((total, item) => total + item.quantity, 0);
     const cartCountEl = document.getElementById('cartCount');
     if (cartCountEl) {

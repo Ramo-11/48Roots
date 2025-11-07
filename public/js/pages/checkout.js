@@ -1,41 +1,68 @@
-let stripe, cardElement;
+let stripe, elements;
 let cart = { items: [], subtotal: 0 };
+let shippingCost = 0;
+let clientSecret = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
-    if (typeof Stripe === 'undefined' || !window.CONFIG?.publicKey) {
+    if (!window.Stripe || !window.STRIPE_CONFIG?.publicKey) {
         Common.showNotification('Payment system not configured', 'error');
         return;
     }
 
-    stripe = Stripe(window.CONFIG.publicKey);
-    const elements = stripe.elements();
-
-    cardElement = elements.create('card', {
-        style: {
-            base: {
-                fontSize: '16px',
-                color: '#1f2937',
-                '::placeholder': {
-                    color: '#9ca3af',
-                },
-            },
-        },
-    });
-
-    cardElement.mount('#card-element');
-    cardElement.on('change', handleCardChange);
+    stripe = Stripe(window.STRIPE_CONFIG.publicKey);
 
     await loadCart();
+    await initializePayment();
 
     document.getElementById('checkoutForm').addEventListener('submit', handleSubmit);
+
+    ['city', 'state', 'zipCode'].forEach((id) => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('blur', calculateShipping);
+        }
+    });
 });
 
-function handleCardChange(event) {
-    const errorElement = document.getElementById('card-errors');
-    if (event.error) {
-        errorElement.textContent = event.error.message;
-    } else {
-        errorElement.textContent = '';
+async function initializePayment() {
+    try {
+        const response = await fetch('/api/checkout/create-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.message || 'Failed to initialize payment');
+        }
+
+        clientSecret = result.data.clientSecret;
+
+        elements = stripe.elements({
+            clientSecret: clientSecret,
+            appearance: {
+                theme: 'stripe',
+            },
+        });
+
+        const paymentElement = elements.create('payment', {
+            layout: 'tabs',
+        });
+
+        paymentElement.mount('#payment-element');
+
+        paymentElement.on('change', (event) => {
+            const errorElement = document.getElementById('payment-errors');
+            if (event.error) {
+                errorElement.textContent = event.error.message;
+            } else {
+                errorElement.textContent = '';
+            }
+        });
+    } catch (error) {
+        console.error('Payment initialization error:', error);
+        Common.showNotification('Failed to initialize payment', 'error');
     }
 }
 
@@ -79,17 +106,64 @@ function renderOrderSummary() {
     updateTotals();
 }
 
+async function calculateShipping() {
+    const city = document.getElementById('city').value.trim();
+    const state = document.getElementById('state').value.trim();
+    const zipCode = document.getElementById('zipCode').value.trim();
+
+    if (!city || !state || !zipCode) {
+        console.log('Missing address fields:', { city, state, zipCode });
+        return;
+    }
+
+    console.log('Calculating shipping for:', { city, state, zipCode });
+
+    try {
+        const response = await fetch('/api/checkout/calculate-shipping', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                address: {
+                    city,
+                    state,
+                    postalCode: zipCode,
+                    country: 'US',
+                },
+            }),
+        });
+
+        const result = await response.json();
+        console.log('Shipping calculation result:', result);
+
+        if (result.success) {
+            shippingCost = result.data.shipping;
+            updateTotals();
+            Common.showNotification(
+                `Shipping calculated: $${shippingCost.toFixed(2)}`,
+                'success',
+                2000
+            );
+        } else {
+            console.error('Shipping calculation failed:', result.message);
+            Common.showNotification(result.message || 'Failed to calculate shipping', 'error');
+        }
+    } catch (error) {
+        console.error('Error calculating shipping:', error);
+        Common.showNotification('Failed to calculate shipping', 'error');
+    }
+}
+
 async function updateTotals() {
     const subtotal = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const donationAmount = await getDonationAmount();
-    const shipping = 0;
-    const total = subtotal + donationAmount + shipping;
+    const total = subtotal + shippingCost;
 
     document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
-    document.getElementById('donation').textContent = `$${donationAmount.toFixed(2)}`;
     document.getElementById('shipping').textContent =
-        shipping === 0 ? 'FREE' : `$${shipping.toFixed(2)}`;
+        shippingCost === 0 ? 'Enter address' : `$${shippingCost.toFixed(2)}`;
     document.getElementById('total').textContent = `$${total.toFixed(2)}`;
+    document.getElementById('donationInfo').textContent =
+        `We will donate $${donationAmount.toFixed(2)} to Palestine from this purchase`;
 }
 
 async function getDonationAmount() {
@@ -113,37 +187,27 @@ async function handleSubmit(e) {
     Common.showLoading(btn);
 
     try {
-        const sessionResponse = await fetch('/api/checkout/create-session', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-        });
-
-        const sessionResult = await sessionResponse.json();
-
-        if (!sessionResult.success) {
-            throw new Error(sessionResult.message || 'Failed to create checkout session');
-        }
-
-        const { error, paymentIntent } = await stripe.confirmCardPayment(
-            sessionResult.data.clientSecret,
-            {
-                payment_method: {
-                    card: cardElement,
+        const { error, paymentIntent } = await stripe.confirmPayment({
+            elements,
+            confirmParams: {
+                payment_method_data: {
                     billing_details: {
                         name: `${document.getElementById('firstName').value} ${document.getElementById('lastName').value}`,
                         email: document.getElementById('email').value,
                         address: {
                             line1: document.getElementById('address1').value,
-                            line2: document.getElementById('address2').value,
+                            line2: document.getElementById('address2').value || '',
                             city: document.getElementById('city').value,
                             state: document.getElementById('state').value,
                             postal_code: document.getElementById('zipCode').value,
                             country: 'US',
                         },
+                        phone: document.getElementById('phone').value || '',
                     },
                 },
-            }
-        );
+            },
+            redirect: 'if_required',
+        });
 
         if (error) {
             throw new Error(error.message);
@@ -156,7 +220,7 @@ async function handleSubmit(e) {
                 paymentIntentId: paymentIntent.id,
                 shippingAddress: {
                     line1: document.getElementById('address1').value,
-                    line2: document.getElementById('address2').value,
+                    line2: document.getElementById('address2').value || '',
                     city: document.getElementById('city').value,
                     state: document.getElementById('state').value,
                     postalCode: document.getElementById('zipCode').value,
@@ -166,7 +230,7 @@ async function handleSubmit(e) {
                     email: document.getElementById('email').value,
                     firstName: document.getElementById('firstName').value,
                     lastName: document.getElementById('lastName').value,
-                    phone: document.getElementById('phone').value,
+                    phone: document.getElementById('phone').value || '',
                 },
             }),
         });

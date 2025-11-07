@@ -64,12 +64,21 @@
                                 <input type="tel" id="phone" class="form-input" />
                             </div>
                         </div>
+
+                        <button
+                            type="button"
+                            class="btn btn-secondary"
+                            id="calculateShippingBtn"
+                            onclick="calculateShipping()"
+                        >
+                            Calculate Shipping
+                        </button>
                     </div>
 
                     <div class="checkout-section">
                         <h3>Payment</h3>
-                        <div id="card-element" class="card-element"></div>
-                        <div id="card-errors" class="form-error"></div>
+                        <div id="payment-element"></div>
+                        <div id="payment-errors" class="form-error"></div>
                     </div>
 
                     <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
@@ -88,16 +97,19 @@
                         <span id="subtotal">$0.00</span>
                     </div>
                     <div class="summary-row">
-                        <span>Donation to Palestine</span>
-                        <span id="donation">$0.00</span>
-                    </div>
-                    <div class="summary-row">
                         <span>Shipping</span>
                         <span id="shipping">$0.00</span>
                     </div>
                     <div class="summary-row total">
                         <span>Total</span>
                         <span id="total">$0.00</span>
+                    </div>
+
+                    <div class="donation-info">
+                        <i class="fas fa-heart"></i>
+                        <span id="donationInfo"
+                            >We will donate $5.00 to Palestine from this purchase</span
+                        >
                     </div>
                 </div>
             </div>
