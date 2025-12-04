@@ -3,56 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    
-    <title><%= typeof title !== 'undefined' ? title : 'Sahab Solutions' %></title>
-    <meta name="description" content="<%= typeof description !== 'undefined' ? description : 'Professional web development services' %>">
-    
-    <meta property="og:title" content="<%= typeof title !== 'undefined' ? title : 'Sahab Solutions' %>">
-    <meta property="og:description" content="<%= typeof description !== 'undefined' ? description : 'Professional web development services' %>">
-    <meta property="og:type" content="website">
-    
+
+    <title><%= title || (isAdmin ? 'Admin - 48 Roots' : 'Sahab Solutions') %></title>
+    <meta name="description" content="<%= description ?? '' %>">
+
     <link rel="icon" type="image/png" href="/images/favicon.png">
-    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
     <link rel="stylesheet" href="/css/variables.css">
-    <link rel="stylesheet" href="/css/common.css">
-    <link rel="stylesheet" href="/css/layout.css">
-    <link rel="stylesheet" href="/css/nav.css">
-    <link rel="stylesheet" href="/css/footer.css">
-    
-    <% if (typeof additionalCSS !== 'undefined') { %>
-        <% additionalCSS.forEach(css => { %>
-            <link rel="stylesheet" href="/css/<%= css %>">
-        <% }) %>
+
+    <% if (!isAdmin) { %>
+        <link rel="stylesheet" href="/css/common.css">
+        <link rel="stylesheet" href="/css/layout.css">
+        <link rel="stylesheet" href="/css/nav.css">
+        <link rel="stylesheet" href="/css/footer.css">
     <% } %>
-    <% if (typeof stripePublicKey !== 'undefined' && stripePublicKey) { %>
+
+    <% if (additionalCSS) { additionalCSS.forEach(css => { %>
+        <link rel="stylesheet" href="/css/<%= css %>">
+    <% }) } %>
+
+    <% if (!isAdmin && stripePublicKey) { %>
         <script>
-            window.STRIPE_CONFIG = {
-                publicKey: "<%= stripePublicKey %>",
-            };
+            window.STRIPE_CONFIG = { publicKey: "<%= stripePublicKey %>" }
         </script>
         <script src="https://js.stripe.com/v3/"></script>
     <% } %>
 </head>
+
 <body>
+
+<% if (isAdmin) { %>
+
+    <!-- ================= ADMIN LAYOUT ================= -->
+    <div class="admin-layout">
+        <aside class="admin-sidebar">
+            <div class="admin-sidebar-header">
+                <a href="/admin" class="admin-logo">
+                    <img src="/images/logo.png" class="admin-logo-img" alt="logo">
+                    <span class="admin-logo-text">Admin</span>
+                </a>
+            </div>
+
+            <nav class="admin-nav">
+                <a href="/admin" class="admin-nav-link"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a>
+                <a href="#productsSection" class="admin-nav-link"><i class="fas fa-box"></i><span>Products</span></a>
+                <a href="#ordersSection" class="admin-nav-link"><i class="fas fa-shopping-bag"></i><span>Orders</span></a>
+                <a href="/" class="admin-nav-link" target="_blank"><i class="fas fa-external-link-alt"></i><span>View Store</span></a>
+            </nav>
+
+            <div class="admin-sidebar-footer">
+                <a href="/admin/logout" class="admin-nav-link"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
+            </div>
+        </aside>
+
+        <main class="admin-main">
+            <%- body %>
+        </main>
+    </div>
+
+<% } else { %>
+
+    <!-- ================= PUBLIC LAYOUT ================= -->
     <%- include('partials/nav') %>
-    
+
     <main class="main-content">
         <%- body %>
     </main>
-    
+
     <%- include('partials/footer') %>
-    
-    <script src="/js/common.js"></script>
+
+<% } %>
+
+<script src="/js/common.js"></script>
+
+<% if (!isAdmin) { %>
     <script src="/js/nav.js"></script>
     <script src="/js/footer.js"></script>
-    
-    <% if (typeof additionalJS !== 'undefined') { %>
-        <% additionalJS.forEach(js => { %>
-            <script src="/js/<%= js %>"></script>
-        <% }) %>
-    <% } %>
+<% } %>
+
+<% if (additionalJS) { additionalJS.forEach(js => { %>
+    <script src="/js/<%= js %>"></script>
+<% }) } %>
+
 </body>
 </html>
