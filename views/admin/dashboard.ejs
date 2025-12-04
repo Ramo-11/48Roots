@@ -1,0 +1,255 @@
+<%- include('../partials/header', { 
+    title: title, 
+    description: description,
+    additionalCSS: additionalCSS || []
+}) %>
+
+<div class="admin-layout">
+    <aside class="admin-sidebar">
+        <div class="admin-sidebar-header">
+            <a href="/admin" class="admin-logo">
+                <img src="/images/logo.png" alt="48 Roots" class="admin-logo-img">
+                <span class="admin-logo-text">Admin</span>
+            </a>
+        </div>
+        <nav class="admin-nav">
+            <a href="/admin" class="admin-nav-link active">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="#" class="admin-nav-link" data-section="products">
+                <i class="fas fa-box"></i>
+                <span>Products</span>
+            </a>
+            <a href="#" class="admin-nav-link" data-section="orders">
+                <i class="fas fa-shopping-bag"></i>
+                <span>Orders</span>
+            </a>
+            <a href="/" class="admin-nav-link" target="_blank">
+                <i class="fas fa-external-link-alt"></i>
+                <span>View Store</span>
+            </a>
+        </nav>
+        <div class="admin-sidebar-footer">
+            <a href="/admin/logout" class="admin-nav-link">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </aside>
+
+    <main class="admin-main">
+        <header class="admin-header">
+            <h1 class="admin-page-title">Dashboard</h1>
+            <div class="admin-header-actions">
+                <button type="button" class="btn btn-primary" id="syncProductsBtn">
+                    <i class="fas fa-sync-alt"></i>
+                    Sync from Printful
+                </button>
+            </div>
+        </header>
+
+        <div class="admin-content">
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon printful">
+                        <i class="fas fa-cloud"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Printful Status</span>
+                        <span class="stat-value" id="printfulStatus">
+                            <span class="status-badge checking">Checking...</span>
+                        </span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon products">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Total Products</span>
+                        <span class="stat-value" id="totalProducts">-</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon synced">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Synced Products</span>
+                        <span class="stat-value" id="syncedProducts">-</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orders">
+                        <i class="fas fa-shopping-bag"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Printful Orders</span>
+                        <span class="stat-value" id="printfulOrders">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Last Sync Info -->
+            <div class="info-bar" id="lastSyncInfo" style="display: none;">
+                <i class="fas fa-clock"></i>
+                <span>Last synced: <strong id="lastSyncTime">Never</strong></span>
+            </div>
+
+            <!-- Products Section -->
+            <section class="admin-section" id="productsSection">
+                <div class="section-header">
+                    <h2 class="section-title">Products</h2>
+                    <div class="section-actions">
+                        <select id="productFilter" class="form-select">
+                            <option value="all">All Products</option>
+                            <option value="synced">Synced Only</option>
+                            <option value="unsynced">Not Synced</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="products-grid" id="productsGrid">
+                    <div class="loading-state">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span>Loading products...</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Orders Section -->
+            <section class="admin-section" id="ordersSection">
+                <div class="section-header">
+                    <h2 class="section-title">Recent Orders</h2>
+                </div>
+                <div class="orders-table-container">
+                    <table class="orders-table" id="ordersTable">
+                        <thead>
+                            <tr>
+                                <th>Order #</th>
+                                <th>Customer</th>
+                                <th>Total</th>
+                                <th>Payment</th>
+                                <th>Fulfillment</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTableBody">
+                            <tr>
+                                <td colspan="7" class="loading-state">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    <span>Loading orders...</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </main>
+</div>
+
+<!-- Edit Product Modal -->
+<div class="modal-overlay" id="editProductModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Edit Product</h3>
+            <button type="button" class="modal-close" data-dismiss="modal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="editProductForm">
+            <div class="modal-body">
+                <input type="hidden" id="editProductId">
+                <div class="form-group">
+                    <label for="editProductName" class="form-label">Product Name</label>
+                    <input type="text" id="editProductName" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="editProductPrice" class="form-label">Price ($)</label>
+                    <input type="number" id="editProductPrice" class="form-input" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="editProductCategory" class="form-label">Category</label>
+                    <select id="editProductCategory" class="form-select">
+                        <option value="tshirts">T-Shirts</option>
+                        <option value="hoodies">Hoodies</option>
+                        <option value="sweatshirts">Sweatshirts</option>
+                        <option value="hats">Hats</option>
+                        <option value="accessories">Accessories</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editProductDescription" class="form-label">Description</label>
+                    <textarea id="editProductDescription" class="form-textarea" rows="3"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-check">
+                        <input type="checkbox" id="editProductActive" class="form-checkbox">
+                        <label for="editProductActive">Active</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="editProductFeatured" class="form-checkbox">
+                        <label for="editProductFeatured">Featured</label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" id="deleteConfirmModal">
+    <div class="modal modal-sm">
+        <div class="modal-header">
+            <h3 class="modal-title">Delete Product</h3>
+            <button type="button" class="modal-close" data-dismiss="modal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <p>Are you sure you want to delete <strong id="deleteProductName"></strong>?</p>
+            <p class="text-muted">This action cannot be undone.</p>
+            <input type="hidden" id="deleteProductId">
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+        </div>
+    </div>
+</div>
+
+<!-- Sync Progress Modal -->
+<div class="modal-overlay" id="syncProgressModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Syncing Products</h3>
+        </div>
+        <div class="modal-body">
+            <div class="sync-progress">
+                <div class="sync-spinner">
+                    <i class="fas fa-sync-alt fa-spin"></i>
+                </div>
+                <p class="sync-message" id="syncMessage">Connecting to Printful...</p>
+            </div>
+            <div class="sync-log" id="syncLog"></div>
+        </div>
+        <div class="modal-footer" id="syncModalFooter" style="display: none;">
+            <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<%- include('../partials/footer', { additionalJS: additionalJS || [] }) %>

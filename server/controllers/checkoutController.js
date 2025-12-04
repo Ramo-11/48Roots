@@ -3,8 +3,11 @@ const Order = require('../../models/Order');
 const Settings = require('../../models/Settings');
 const { logger } = require('../utils/logger');
 const { createPaymentIntent, retrievePaymentIntent } = require('../config/stripe');
-const { createPrintifyOrder, calculatePrintifyShipping } = require('../config/printify');
+const { createPrintfulOrder, calculatePrintfulShipping } = require('../config/printful');
 
+/**
+ * Create a checkout session with Stripe payment intent
+ */
 exports.createCheckoutSession = async (req, res) => {
     try {
         const sessionId = req.session.id;
@@ -45,6 +48,9 @@ exports.createCheckoutSession = async (req, res) => {
     }
 };
 
+/**
+ * Calculate shipping costs using Printful API
+ */
 exports.calculateShipping = async (req, res) => {
     try {
         const { address } = req.body;
@@ -68,25 +74,60 @@ exports.calculateShipping = async (req, res) => {
 
         let shippingCost = 0;
 
-        // Try Printify shipping calculation
-        try {
-            if (process.env.PRINTIFY_API_TOKEN && process.env.PRINTIFY_SHOP_ID) {
-                shippingCost = await calculatePrintifyShipping(cart.items, address);
+        // Prepare items for Printful shipping calculation
+        const printfulItems = cart.items
+            .map((item) => {
+                // Get the Printful variant ID from the product
+                const variant = item.product.variants?.find((v) => v.size === item.variant.size);
+
+                if (variant?.printfulVariantId || variant?.printfulSyncVariantId) {
+                    return {
+                        printfulVariantId: variant.printfulVariantId,
+                        printfulSyncVariantId: variant.printfulSyncVariantId,
+                        quantity: item.quantity,
+                    };
+                }
+                return null;
+            })
+            .filter(Boolean);
+
+        // Try Printful shipping calculation if we have Printful products
+        if (printfulItems.length > 0 && process.env.PRINTFUL_API_TOKEN) {
+            try {
+                shippingCost = await calculatePrintfulShipping(printfulItems, {
+                    line1: address.line1 || address.address1,
+                    city: address.city,
+                    state: address.state,
+                    postalCode: address.postalCode || address.zip,
+                    country: address.country || 'US',
+                });
+            } catch (printfulError) {
+                logger.error(
+                    'Printful shipping calculation failed, using fallback:',
+                    printfulError
+                );
             }
-        } catch (error) {
-            logger.error('Printify shipping calculation failed, using fallback:', error);
         }
 
-        // Fallback to flat rate if Printify fails
+        // Fallback to flat rate if Printful fails or no Printful products
         if (shippingCost === 0) {
             const flatRate = (await Settings.get('shipping_flat_rate')) || 5.99;
             shippingCost = flatRate;
+        }
+
+        // Check for free shipping threshold
+        const subtotal = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+        const freeShippingThreshold = await Settings.get('free_shipping_threshold');
+
+        if (freeShippingThreshold && subtotal >= freeShippingThreshold) {
+            shippingCost = 0;
         }
 
         res.json({
             success: true,
             data: {
                 shipping: shippingCost,
+                isFreeShipping: shippingCost === 0,
             },
         });
     } catch (error) {
@@ -98,11 +139,15 @@ exports.calculateShipping = async (req, res) => {
     }
 };
 
+/**
+ * Confirm and process the order
+ */
 exports.confirmOrder = async (req, res) => {
     try {
         const { paymentIntentId, shippingAddress, customer } = req.body;
         const sessionId = req.session.id;
 
+        // Verify payment
         const paymentIntent = await retrievePaymentIntent(paymentIntentId);
 
         if (paymentIntent.status !== 'succeeded') {
@@ -121,25 +166,66 @@ exports.confirmOrder = async (req, res) => {
             });
         }
 
+        // Calculate totals
         const subtotal = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-        const shippingCost = await calculatePrintifyShipping(cart.items, shippingAddress);
+
+        // Get shipping cost
+        let shippingCost = 0;
+        const printfulItems = cart.items
+            .map((item) => {
+                const variant = item.product.variants?.find((v) => v.size === item.variant.size);
+                if (variant?.printfulVariantId || variant?.printfulSyncVariantId) {
+                    return {
+                        printfulVariantId: variant.printfulVariantId,
+                        printfulSyncVariantId: variant.printfulSyncVariantId,
+                        quantity: item.quantity,
+                    };
+                }
+                return null;
+            })
+            .filter(Boolean);
+
+        if (printfulItems.length > 0) {
+            shippingCost = await calculatePrintfulShipping(printfulItems, shippingAddress);
+        }
+
+        if (shippingCost === 0) {
+            shippingCost = (await Settings.get('shipping_flat_rate')) || 5.99;
+        }
+
+        // Check free shipping
+        const freeShippingThreshold = await Settings.get('free_shipping_threshold');
+        if (freeShippingThreshold && subtotal >= freeShippingThreshold) {
+            shippingCost = 0;
+        }
+
         const donationAmount = (await Settings.get('donation_per_purchase')) || 5.0;
 
+        // Create the order in our database
         const order = await Order.create({
             customer,
             shippingAddress,
-            items: cart.items.map((item) => ({
-                product: item.product._id,
-                productSnapshot: {
-                    name: item.product.name,
-                    slug: item.product.slug,
-                    image: item.product.images[0]?.url,
-                },
-                variant: item.variant,
-                quantity: item.quantity,
-                price: item.price,
-                subtotal: item.price * item.quantity,
-            })),
+            items: cart.items.map((item) => {
+                const variant = item.product.variants?.find((v) => v.size === item.variant.size);
+                return {
+                    product: item.product._id,
+                    productSnapshot: {
+                        name: item.product.name,
+                        slug: item.product.slug,
+                        image: item.product.images[0]?.url,
+                    },
+                    variant: {
+                        size: item.variant.size,
+                        color: item.variant.color || '',
+                        sku: variant?.sku || '',
+                        printfulVariantId: variant?.printfulVariantId,
+                        printfulSyncVariantId: variant?.printfulSyncVariantId,
+                    },
+                    quantity: item.quantity,
+                    price: item.price,
+                    subtotal: item.price * item.quantity,
+                };
+            }),
             subtotal,
             shipping: { cost: shippingCost, method: 'Standard' },
             donation: { amount: donationAmount, description: 'Palestine relief donation' },
@@ -156,20 +242,61 @@ exports.confirmOrder = async (req, res) => {
             },
         });
 
-        const printifyResult = await createPrintifyOrder({
-            orderNumber: order.orderNumber,
-            items: cart.items,
-            shippingAddress,
-            customer,
-        });
+        // Create order in Printful
+        const printfulOrderItems = cart.items
+            .map((item) => {
+                const variant = item.product.variants?.find((v) => v.size === item.variant.size);
 
-        if (printifyResult.success) {
-            order.fulfillment.printifyOrderId = printifyResult.printifyOrderId;
-            await order.save();
+                if (variant?.printfulSyncVariantId || variant?.printfulVariantId) {
+                    return {
+                        product: item.product,
+                        variant: {
+                            printfulSyncVariantId: variant.printfulSyncVariantId,
+                            printfulVariantId: variant.printfulVariantId,
+                        },
+                        quantity: item.quantity,
+                        printFiles: item.product.printFiles,
+                    };
+                }
+                return null;
+            })
+            .filter(Boolean);
+
+        if (printfulOrderItems.length > 0) {
+            const printfulResult = await createPrintfulOrder({
+                orderNumber: order.orderNumber,
+                items: printfulOrderItems,
+                shippingAddress,
+                customer,
+                subtotal,
+                shippingCost,
+            });
+
+            if (printfulResult.success) {
+                order.fulfillment.printfulOrderId = printfulResult.printfulOrderId;
+                order.fulfillment.status = 'processing';
+                await order.save();
+                logger.info(
+                    `Printful order created for ${order.orderNumber}: ${printfulResult.printfulOrderId}`
+                );
+            } else {
+                logger.error(
+                    `Printful order creation failed for ${order.orderNumber}:`,
+                    printfulResult.error
+                );
+                // Order is still saved, can be manually processed later
+                order.notes = `Printful order creation failed: ${printfulResult.error}`;
+                await order.save();
+            }
         } else {
-            logger.error('Printify order creation failed, but order was saved:', order.orderNumber);
+            logger.warn(
+                `No Printful items in order ${order.orderNumber} - manual fulfillment required`
+            );
+            order.notes = 'No Printful products - manual fulfillment required';
+            await order.save();
         }
 
+        // Clear the cart
         await Cart.deleteOne({ sessionId });
 
         res.json({
@@ -184,6 +311,35 @@ exports.confirmOrder = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to confirm order',
+        });
+    }
+};
+
+/**
+ * Get order details by order number
+ */
+exports.getOrderByNumber = async (req, res) => {
+    try {
+        const { orderNumber } = req.params;
+
+        const order = await Order.findOne({ orderNumber }).populate('items.product');
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found',
+            });
+        }
+
+        res.json({
+            success: true,
+            data: order,
+        });
+    } catch (error) {
+        logger.error('Error getting order:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get order',
         });
     }
 };

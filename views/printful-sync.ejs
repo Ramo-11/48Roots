@@ -1,0 +1,350 @@
+<%# Admin Printful Sync Page %>
+<section class="admin-sync-page">
+    <div class="container">
+        <div class="page-header">
+            <h1>Printful Product Sync</h1>
+            <p>Sync your products from Printful to your local store</p>
+        </div>
+
+        <div class="sync-status-card" id="syncStatusCard">
+            <div class="status-header">
+                <h2>Connection Status</h2>
+                <span class="status-badge" id="connectionBadge">Checking...</span>
+            </div>
+            
+            <div class="status-details" id="statusDetails">
+                <div class="loading-spinner">
+                    <span class="loading"></span>
+                    <p>Checking Printful connection...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="sync-actions">
+            <button class="btn btn-primary btn-lg" id="syncAllBtn" disabled>
+                <i class="fas fa-sync"></i> Sync All Products
+            </button>
+            <button class="btn btn-outline" id="refreshStatusBtn">
+                <i class="fas fa-refresh"></i> Refresh Status
+            </button>
+        </div>
+
+        <div class="sync-log" id="syncLog" style="display: none;">
+            <h3>Sync Log</h3>
+            <div class="log-content" id="logContent"></div>
+        </div>
+
+        <div class="product-list" id="productList">
+            <h2>Synced Products</h2>
+            <div class="products-grid" id="syncedProducts">
+                <!-- Products loaded dynamically -->
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+.admin-sync-page {
+    padding: var(--spacing-2xl) 0;
+}
+
+.page-header {
+    text-align: center;
+    margin-bottom: var(--spacing-2xl);
+}
+
+.page-header h1 {
+    margin-bottom: var(--spacing-sm);
+}
+
+.page-header p {
+    color: var(--text-secondary);
+}
+
+.sync-status-card {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    margin-bottom: var(--spacing-xl);
+}
+
+.status-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+}
+
+.status-header h2 {
+    margin: 0;
+}
+
+.status-badge {
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+}
+
+.status-badge.connected {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.status-badge.disconnected {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+.status-badge.checking {
+    background-color: var(--warning-color);
+    color: white;
+}
+
+.status-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.status-item {
+    text-align: center;
+    padding: var(--spacing-md);
+    background: var(--bg-primary);
+    border-radius: var(--radius-md);
+}
+
+.status-item .value {
+    font-size: var(--font-size-2xl);
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.status-item .label {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
+
+.sync-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: center;
+    margin-bottom: var(--spacing-2xl);
+}
+
+.sync-log {
+    background: var(--bg-dark);
+    color: var(--text-white);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-2xl);
+}
+
+.sync-log h3 {
+    color: var(--text-white);
+    margin-bottom: var(--spacing-md);
+}
+
+.log-content {
+    font-family: monospace;
+    font-size: var(--font-size-sm);
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.log-entry {
+    padding: var(--spacing-xs) 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.log-entry.success {
+    color: #10b981;
+}
+
+.log-entry.error {
+    color: #ef4444;
+}
+
+.log-entry.info {
+    color: #60a5fa;
+}
+
+.product-list h2 {
+    margin-bottom: var(--spacing-lg);
+}
+
+.loading-spinner {
+    text-align: center;
+    padding: var(--spacing-xl);
+}
+
+.sync-progress {
+    margin-top: var(--spacing-md);
+}
+
+.progress-bar {
+    height: 8px;
+    background: var(--border-color);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--primary-color);
+    transition: width 0.3s ease;
+}
+
+@media (max-width: 768px) {
+    .sync-actions {
+        flex-direction: column;
+    }
+    
+    .sync-actions .btn {
+        width: 100%;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadSyncStatus();
+    
+    document.getElementById('syncAllBtn').addEventListener('click', syncAllProducts);
+    document.getElementById('refreshStatusBtn').addEventListener('click', loadSyncStatus);
+});
+
+async function loadSyncStatus() {
+    const badge = document.getElementById('connectionBadge');
+    const details = document.getElementById('statusDetails');
+    const syncBtn = document.getElementById('syncAllBtn');
+    
+    badge.textContent = 'Checking...';
+    badge.className = 'status-badge checking';
+    
+    try {
+        const response = await fetch('/api/printful/status');
+        const result = await response.json();
+        
+        if (result.success) {
+            const data = result.data;
+            
+            if (data.printfulConnected) {
+                badge.textContent = 'Connected';
+                badge.className = 'status-badge connected';
+                syncBtn.disabled = false;
+            } else {
+                badge.textContent = 'Disconnected';
+                badge.className = 'status-badge disconnected';
+                syncBtn.disabled = true;
+            }
+            
+            details.innerHTML = `
+                <div class="status-item">
+                    <div class="value">${data.printfulProducts || 0}</div>
+                    <div class="label">Printful Products</div>
+                </div>
+                <div class="status-item">
+                    <div class="value">${data.localProducts || 0}</div>
+                    <div class="label">Local Products</div>
+                </div>
+                <div class="status-item">
+                    <div class="value">${data.syncedProducts || 0}</div>
+                    <div class="label">Synced Products</div>
+                </div>
+                <div class="status-item">
+                    <div class="value">${data.unsyncedProducts || 0}</div>
+                    <div class="label">Unsynced</div>
+                </div>
+            `;
+            
+            if (data.storeName) {
+                details.innerHTML += `
+                    <div class="status-item" style="grid-column: span 2;">
+                        <div class="value" style="font-size: var(--font-size-lg);">${data.storeName}</div>
+                        <div class="label">Printful Store</div>
+                    </div>
+                `;
+            }
+            
+            // Load synced products
+            await loadSyncedProducts();
+        }
+    } catch (error) {
+        console.error('Error loading status:', error);
+        badge.textContent = 'Error';
+        badge.className = 'status-badge disconnected';
+        details.innerHTML = '<p class="error">Failed to load status. Check console for details.</p>';
+    }
+}
+
+async function syncAllProducts() {
+    const btn = document.getElementById('syncAllBtn');
+    const logContainer = document.getElementById('syncLog');
+    const logContent = document.getElementById('logContent');
+    
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading"></span> Syncing...';
+    
+    logContainer.style.display = 'block';
+    logContent.innerHTML = '<div class="log-entry info">Starting sync...</div>';
+    
+    try {
+        const response = await fetch('/api/printful/sync', {
+            method: 'POST'
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            logContent.innerHTML += `
+                <div class="log-entry success">✓ Sync completed</div>
+                <div class="log-entry info">Total products: ${result.data.total}</div>
+                <div class="log-entry success">Created: ${result.data.created}</div>
+                <div class="log-entry info">Updated: ${result.data.updated}</div>
+                ${result.data.errors > 0 ? `<div class="log-entry error">Errors: ${result.data.errors}</div>` : ''}
+            `;
+            
+            Common.showNotification('Products synced successfully!', 'success');
+            await loadSyncStatus();
+        } else {
+            logContent.innerHTML += `<div class="log-entry error">✗ ${result.message}</div>`;
+            Common.showNotification(result.message || 'Sync failed', 'error');
+        }
+    } catch (error) {
+        console.error('Sync error:', error);
+        logContent.innerHTML += `<div class="log-entry error">✗ Sync failed: ${error.message}</div>`;
+        Common.showNotification('Sync failed', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-sync"></i> Sync All Products';
+    }
+}
+
+async function loadSyncedProducts() {
+    const container = document.getElementById('syncedProducts');
+    
+    try {
+        const response = await fetch('/api/products');
+        const result = await response.json();
+        
+        if (result.success && result.data.length > 0) {
+            container.innerHTML = result.data.map(product => `
+                <div class="product-card-mini">
+                    <img src="${product.images[0]?.url || '/images/placeholder.png'}" alt="${product.name}">
+                    <div class="product-info">
+                        <h4>${product.name}</h4>
+                        <p>$${product.price.toFixed(2)}</p>
+                        <span class="sync-status ${product.printfulSyncProductId ? 'synced' : 'local'}">
+                            ${product.printfulSyncProductId ? '✓ Synced' : 'Local Only'}
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = '<p class="no-products">No products found. Sync from Printful to get started.</p>';
+        }
+    } catch (error) {
+        console.error('Error loading products:', error);
+    }
+}
+</script>
