@@ -88,6 +88,105 @@ exports.getSyncStatus = async (req, res) => {
 };
 
 /**
+ * Sync a single product from Printful
+ */
+exports.syncSingleProduct = async (req, res) => {
+    try {
+        const { printfulProductId } = req.params;
+
+        const productDetails = await getSyncProductDetails(printfulProductId);
+        if (!productDetails || !productDetails.sync_product) {
+            return res.status(404).json({
+                success: false,
+                message: 'Product not found in Printful',
+            });
+        }
+
+        const { sync_product, sync_variants } = productDetails;
+
+        const baseSlug = sync_product.name
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-|-$/g, '');
+
+        let slug = baseSlug;
+        const existingWithSlug = await Product.findOne({
+            slug: baseSlug,
+            printfulSyncProductId: { $ne: sync_product.id },
+        });
+        if (existingWithSlug) {
+            slug = `${baseSlug}-${sync_product.id}`;
+        }
+
+        const images = [];
+        if (sync_product.thumbnail_url) {
+            images.push({
+                url: sync_product.thumbnail_url,
+                alt: sync_product.name,
+                isPrimary: true,
+            });
+        }
+
+        const variants = [];
+        let category = 'other';
+        let price = 0;
+
+        if (sync_variants?.length > 0) {
+            price = parseFloat(sync_variants[0].retail_price) || 0;
+
+            for (const syncVariant of sync_variants) {
+                if (syncVariant.product) {
+                    category = mapPrintfulCategory(syncVariant.product.name?.split(' ')[0]);
+                }
+
+                variants.push({
+                    size: normalizePrintfulSize(syncVariant.size || 'One Size'),
+                    color: syncVariant.color || '',
+                    sku: syncVariant.sku || `PF-${syncVariant.id}`,
+                    stock: 999,
+                    printfulVariantId: syncVariant.variant_id,
+                    printfulSyncVariantId: syncVariant.id,
+                });
+            }
+        }
+
+        const productData = {
+            name: sync_product.name,
+            slug,
+            description: sync_product.name,
+            price,
+            images:
+                images.length > 0
+                    ? images
+                    : [{ url: '/images/placeholder.png', alt: sync_product.name, isPrimary: true }],
+            category,
+            variants,
+            printfulSyncProductId: sync_product.id,
+            printfulExternalId: sync_product.external_id,
+            isActive: !sync_product.is_ignored,
+        };
+
+        const product = await Product.findOneAndUpdate(
+            { printfulSyncProductId: sync_product.id },
+            productData,
+            { upsert: true, new: true }
+        );
+
+        res.json({
+            success: true,
+            message: 'Product synced successfully',
+            data: product,
+        });
+    } catch (error) {
+        logger.error('Error syncing single product:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to sync product',
+        });
+    }
+};
+
+/**
  * Sync all products from Printful
  */
 exports.syncAllProducts = async (req, res) => {

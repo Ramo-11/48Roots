@@ -1,88 +1,60 @@
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('loginForm');
+    const loginBtn = document.getElementById('loginBtn');
     const loginError = document.getElementById('loginError');
-    const togglePassword = document.querySelector('.toggle-password');
-    const passwordInput = document.getElementById('password');
+    const btnText = loginBtn.querySelector('.btn-text');
+    const btnLoading = loginBtn.querySelector('.btn-loading');
 
-    // Toggle password visibility
-    if (togglePassword && passwordInput) {
-        togglePassword.addEventListener('click', () => {
-            const type = passwordInput.type === 'password' ? 'text' : 'password';
-            passwordInput.type = type;
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-            const icon = togglePassword.querySelector('i');
-            icon.classList.toggle('fa-eye');
-            icon.classList.toggle('fa-eye-slash');
-        });
-    }
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
 
-    // Handle form submission
-    if (loginForm) {
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+        if (!username || !password) {
+            showError('Please enter username and password');
+            return;
+        }
 
-            const submitBtn = loginForm.querySelector('button[type="submit"]');
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value;
+        setLoading(true);
+        hideError();
 
-            // Clear previous errors
-            loginError.classList.remove('show');
-            loginError.textContent = '';
+        try {
+            const response = await fetch('/api/admin/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, password }),
+            });
 
-            // Validate
-            if (!username || !password) {
-                showError('Please enter both username and password.');
-                return;
+            const data = await response.json();
+
+            if (data.success) {
+                window.location.href = '/admin';
+            } else {
+                showError(data.message || 'Invalid credentials');
             }
+        } catch (error) {
+            console.error('Login error:', error);
+            showError('An error occurred. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    });
 
-            // Show loading state
-            submitBtn.classList.add('loading');
-
-            try {
-                const response = await fetch('/api/admin/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ username, password }),
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    // Redirect to admin dashboard
-                    window.location.href = result.redirect || '/admin';
-                } else {
-                    showError(result.message || 'Invalid credentials. Please try again.');
-                }
-            } catch (error) {
-                console.error('Login error:', error);
-                showError('An error occurred. Please try again.');
-            } finally {
-                submitBtn.classList.remove('loading');
-            }
-        });
+    function setLoading(loading) {
+        loginBtn.disabled = loading;
+        btnText.style.display = loading ? 'none' : 'inline-flex';
+        btnLoading.style.display = loading ? 'inline-flex' : 'none';
     }
 
     function showError(message) {
         loginError.textContent = message;
-        loginError.classList.add('show');
+        loginError.style.display = 'block';
+    }
 
-        // Shake animation
-        loginError.style.animation = 'none';
-        setTimeout(() => {
-            loginError.style.animation = 'shake 0.5s ease';
-        }, 10);
+    function hideError() {
+        loginError.style.display = 'none';
     }
 });
-
-// Add shake animation
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes shake {
-        0%, 100% { transform: translateX(0); }
-        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-        20%, 40%, 60%, 80% { transform: translateX(5px); }
-    }
-`;
-document.head.appendChild(style);

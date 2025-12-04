@@ -2,42 +2,79 @@
     <div class="nav-container">
         <a href="/" class="nav-logo">
             <img src="/images/logo.png" alt="48 Roots" class="nav-logo-img">
-            <span class="nav-logo-text">48 Roots</span>
         </a>
 
-        <div class="nav-search">
-            <input type="text" id="navSearchInput" placeholder="Search products..." class="nav-search-input">
-            <button class="nav-search-btn" aria-label="Search">
-                <i class="fas fa-search"></i>
-            </button>
-        </div>
-
         <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
-            <span class="nav-toggle-icon"></span>
-            <span class="nav-toggle-icon"></span>
-            <span class="nav-toggle-icon"></span>
+            <span class="nav-toggle-bar"></span>
+            <span class="nav-toggle-bar"></span>
+            <span class="nav-toggle-bar"></span>
         </button>
 
         <ul class="nav-menu" id="navMenu">
-            <li class="nav-item">
-                <a href="/shop" class="nav-link">Shop All</a>
-            </li>
-            <li class="nav-item">
-                <a href="/new-arrivals" class="nav-link">New Arrivals</a>
-            </li>
-            <li class="nav-item">
-                <a href="/about" class="nav-link">Our Story</a>
-            </li>
-            <li class="nav-item">
-                <a href="/impact" class="nav-link">Our Impact</a>
-            </li>
+            <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+                <!-- Admin Navigation -->
+                <li class="nav-item">
+                    <a href="/admin" class="nav-link">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a href="/" class="nav-link" target="_blank">
+                        <i class="fas fa-external-link-alt"></i> View Store
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/admin/logout" class="nav-link">Logout</a>
+                </li>
+            <% } else { %>
+                <!-- Public Navigation -->
+                <li class="nav-item">
+                    <a href="/" class="nav-link <%= typeof currentPage !== 'undefined' && currentPage === 'home' ? 'active' : '' %>">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a href="/shop" class="nav-link <%= typeof currentPage !== 'undefined' && currentPage === 'shop' ? 'active' : '' %>">Shop</a>
+                </li>
+                <li class="nav-item">
+                    <a href="/new-arrivals" class="nav-link <%= typeof currentPage !== 'undefined' && currentPage === 'new-arrivals' ? 'active' : '' %>">New Arrivals</a>
+                </li>
+                <li class="nav-item">
+                    <a href="/about" class="nav-link <%= typeof currentPage !== 'undefined' && currentPage === 'about' ? 'active' : '' %>">About</a>
+                </li>
+                <li class="nav-item">
+                    <a href="/impact" class="nav-link <%= typeof currentPage !== 'undefined' && currentPage === 'impact' ? 'active' : '' %>">Impact</a>
+                </li>
+                <li class="nav-item">
+                    <a href="/contact" class="nav-link <%= typeof currentPage !== 'undefined' && currentPage === 'contact' ? 'active' : '' %>">Contact</a>
+                </li>
+            <% } %>
         </ul>
 
-        <div class="nav-actions">
-            <button class="nav-icon-btn" id="cartBtn" aria-label="Shopping cart">
-                <i class="fas fa-shopping-cart"></i>
-                <span class="nav-cart-count" id="cartCount">0</span>
-            </button>
-        </div>
+        <% if (typeof isAdmin === 'undefined' || !isAdmin) { %>
+            <div class="nav-actions">
+                <button class="nav-action-btn search-btn" id="searchBtn" aria-label="Search">
+                    <i class="fas fa-search"></i>
+                </button>
+                <a href="/cart" class="nav-action-btn cart-btn" aria-label="Cart">
+                    <i class="fas fa-shopping-bag"></i>
+                    <span class="cart-count" id="cartCount">0</span>
+                </a>
+            </div>
+        <% } %>
     </div>
 </nav>
+
+<% if (typeof isAdmin === 'undefined' || !isAdmin) { %>
+    <!-- Search Overlay -->
+    <div class="search-overlay" id="searchOverlay">
+        <div class="search-container">
+            <form class="search-form" id="searchForm" action="/shop" method="get">
+                <input type="text" name="search" class="search-input" placeholder="Search products..." id="searchInput" autocomplete="off">
+                <button type="submit" class="search-submit">
+                    <i class="fas fa-search"></i>
+                </button>
+                <button type="button" class="search-close" id="searchClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </form>
+            <div class="search-results" id="searchResults"></div>
+        </div>
+    </div>
+<% } %>
