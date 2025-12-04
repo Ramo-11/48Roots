@@ -18,11 +18,13 @@
         <link rel="stylesheet" href="/css/footer.css">
     <% } %>
 
-    <% if (additionalCSS) { additionalCSS.forEach(css => { %>
-        <link rel="stylesheet" href="/css/<%= css %>">
-    <% }) } %>
+     <% if (typeof additionalCSS !== 'undefined') { %> <%
+            additionalCSS.forEach(function(css) { %>
+                <link rel="stylesheet" href="/css/<%= css %>" />
+        <% }); %> <% } %>
 
-    <% if (!isAdmin && stripePublicKey) { %>
+    <% if (!isAdmin && typeof stripePublicKey !== 'undefined' &&
+        stripePublicKey) { %>
         <script>
             window.STRIPE_CONFIG = { publicKey: "<%= stripePublicKey %>" }
         </script>
@@ -62,8 +64,6 @@
     </div>
 
 <% } else { %>
-
-    <!-- ================= PUBLIC LAYOUT ================= -->
     <%- include('partials/nav') %>
 
     <main class="main-content">
@@ -81,9 +81,10 @@
     <script src="/js/footer.js"></script>
 <% } %>
 
-<% if (additionalJS) { additionalJS.forEach(js => { %>
+<% if (typeof additionalJS !== 'undefined') { %> <%
+    additionalJS.forEach(function(js) { %>
     <script src="/js/<%= js %>"></script>
-<% }) } %>
+<% }); %> <% } %>
 
 </body>
 </html>

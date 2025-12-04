@@ -27,7 +27,11 @@ exports.getLogin = (req, res) => {
 
     res.render('admin/login', {
         title: 'Admin Login - 48Roots',
+        description: 'Admin Login',
         layout: 'layout',
+        isAdmin: false,
+        additionalCSS: ['admin/login.css', 'admin/common.css'],
+        additionalJS: ['admin/login.js'],
         error: null,
     });
 };

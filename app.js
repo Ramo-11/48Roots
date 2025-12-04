@@ -83,6 +83,8 @@ app.use((req, res) => {
     res.status(404).render('404', {
         title: 'Page Not Found',
         layout: 'layout',
+        description: 'Not Found',
+        isAdmin: false,
         additionalCSS: ['404.css'],
     });
 });
@@ -93,6 +95,8 @@ app.use((err, req, res, next) => {
     res.status(500).render('500', {
         title: 'Server Error',
         layout: 'layout',
+        description: 'Error',
+        isAdmin: false,
         additionalCSS: ['500.css'],
     });
 });

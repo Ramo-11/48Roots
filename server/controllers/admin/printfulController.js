@@ -12,24 +12,6 @@ const {
 } = require('../../config/printful');
 
 /**
- * Render the Printful admin dashboard
- */
-exports.getDashboard = async (req, res) => {
-    try {
-        res.render('admin/printful-dashboard', {
-            title: 'Printful Sync - Admin',
-            description: 'Manage Printful product synchronization',
-            additionalCSS: ['admin/printful.css'],
-            additionalJS: ['admin/printful.js'],
-            layout: 'layout',
-        });
-    } catch (error) {
-        logger.error('Error rendering Printful dashboard:', error);
-        res.status(500).send('Server error');
-    }
-};
-
-/**
  * Get sync status - API endpoint
  */
 exports.getSyncStatus = async (req, res) => {

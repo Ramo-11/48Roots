@@ -37,6 +37,7 @@ const getShop = async (req, res) => {
         res.render('shop', {
             title: 'Shop - 48 Roots',
             description: 'Browse our curated collection of Palestinian-inspired apparel.',
+            isAdmin: false,
             currentPage: 'shop',
             additionalCSS: ['shop.css'],
             additionalJS: ['pages/shop.js'],
@@ -65,6 +66,7 @@ const getProductDetail = async (req, res) => {
         res.render('product', {
             title: `${product.name} - 48 Roots`,
             description: product.description || `Shop ${product.name} from 48 Roots.`,
+            isAdmin: false,
             currentPage: 'shop',
             product,
             additionalCSS: ['product.css'],
@@ -84,6 +86,7 @@ const getNewArrivals = async (req, res) => {
         res.render('new-arrivals', {
             title: 'New Arrivals - 48 Roots',
             description: 'Explore our newest additions to the 48 Roots collection.',
+            isAdmin: false,
             currentPage: 'new-arrivals',
             additionalCSS: ['shop.css'],
             additionalJS: ['pages/new-arrivals.js'],
@@ -102,6 +105,7 @@ const getAbout = (req, res) => {
         title: 'About Us - 48 Roots',
         description:
             'Learn about 48 Roots and our mission to support Palestinian communities through apparel.',
+        isAdmin: false,
         currentPage: 'about',
         additionalCSS: ['about.css'],
         additionalJS: ['pages/about.js'],
@@ -112,6 +116,7 @@ const getImpact = (req, res) => {
     res.render('impact', {
         title: 'Our Impact - 48 Roots',
         description: 'See how your purchases help fund Palestinian relief organizations.',
+        isAdmin: false,
         currentPage: 'impact',
         additionalCSS: ['impact.css'],
         additionalJS: ['pages/impact.js'],
@@ -122,6 +127,7 @@ const getContact = (req, res) => {
     res.render('contact', {
         title: 'Contact Us - 48 Roots',
         description: 'Have questions? Reach out to the 48 Roots team.',
+        isAdmin: false,
         currentPage: 'contact',
         additionalCSS: ['contact.css'],
         additionalJS: ['pages/contact.js'],
@@ -132,6 +138,7 @@ const getCart = (req, res) => {
     res.render('cart', {
         title: 'Your Cart - 48 Roots',
         description: 'Review and edit the items in your shopping cart.',
+        isAdmin: false,
         currentPage: 'cart',
         additionalCSS: ['cart.css'],
         additionalJS: ['pages/cart.js'],
@@ -142,6 +149,7 @@ const getCheckout = (req, res) => {
     res.render('checkout', {
         title: 'Checkout - 48 Roots',
         description: 'Enter your shipping and payment details to complete your order.',
+        isAdmin: false,
         currentPage: 'checkout',
         stripePublicKey: process.env.STRIPE_PUBLIC_KEY,
         additionalCSS: ['checkout.css'],
@@ -156,6 +164,7 @@ const getOrderConfirmation = async (req, res) => {
         res.render('order-confirmation', {
             title: 'Order Confirmed - 48 Roots',
             description: 'Your order has been successfully placed.',
+            isAdmin: false,
             currentPage: 'order-confirmation',
             orderNumber,
             additionalCSS: ['order-confirmation.css'],
@@ -174,6 +183,7 @@ const getShipping = (req, res) => {
     res.render('shipping', {
         title: 'Shipping Info - 48 Roots',
         description: 'Learn about our shipping options, delivery times, and policies.',
+        isAdmin: false,
         currentPage: 'shipping',
         additionalCSS: ['info-pages.css'],
     });
@@ -183,6 +193,7 @@ const getReturns = (req, res) => {
     res.render('returns', {
         title: 'Returns & Exchanges - 48 Roots',
         description: 'Learn how to return or exchange your 48 Roots products.',
+        isAdmin: false,
         currentPage: 'returns',
         additionalCSS: ['info-pages.css'],
     });
@@ -192,6 +203,7 @@ const getFAQ = (req, res) => {
     res.render('faq', {
         title: 'FAQ - 48 Roots',
         description: 'Frequently asked questions about shipping, orders, sizing, and more.',
+        isAdmin: false,
         currentPage: 'faq',
         additionalCSS: ['info-pages.css'],
         additionalJS: ['pages/faq.js'],
@@ -202,6 +214,7 @@ const getSizeGuide = (req, res) => {
     res.render('size-guide', {
         title: 'Size Guide - 48 Roots',
         description: 'Find your perfect fit with our detailed size guide.',
+        isAdmin: false,
         currentPage: 'size-guide',
         additionalCSS: ['info-pages.css'],
     });
@@ -211,6 +224,7 @@ const getPrivacyPolicy = (req, res) => {
     res.render('privacy-policy', {
         title: 'Privacy Policy - 48 Roots',
         description: 'Understand how 48 Roots collects and protects your data.',
+        isAdmin: false,
         currentPage: 'privacy-policy',
         additionalCSS: ['info-pages.css'],
     });
@@ -220,6 +234,7 @@ const getTermsOfService = (req, res) => {
     res.render('terms-of-service', {
         title: 'Terms of Service - 48 Roots',
         description: 'Review the terms and conditions for using our store.',
+        isAdmin: false,
         currentPage: 'terms-of-service',
         additionalCSS: ['info-pages.css'],
     });
@@ -237,6 +252,7 @@ const getAdminLogin = (req, res) => {
     res.render('admin/login', {
         title: 'Admin Login - 48 Roots',
         description: 'Sign in to the 48 Roots admin dashboard.',
+        isAdmin: false,
         additionalCSS: ['admin/login.css'],
         additionalJS: ['pages/admin/login.js'],
         isAdmin: true,
