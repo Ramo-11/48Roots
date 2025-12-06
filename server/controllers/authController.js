@@ -1,132 +1,87 @@
+// controllers/adminAuthController.js
 const Admin = require('../../models/Admin');
-const { logger } = require('../utils/logger');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
-/**
- * Attach admin to res.locals for templates
- */
-exports.attachUserToLocals = (req, res, next) => {
-    if (req.session && req.session.adminId) {
-        res.locals.currentAdmin = {
-            id: req.session.adminId,
-            name: req.session.adminName,
-            role: req.session.adminRole,
-        };
-    } else {
-        res.locals.currentAdmin = null;
-    }
+exports.attachAdminToLocals = (req, res, next) => {
+    res.locals.currentAdmin = req.session?.adminId
+        ? { id: req.session.adminId, name: req.session.adminName }
+        : null;
     next();
 };
 
-/**
- * GET Login Page
- */
+// GET login
 exports.getLogin = (req, res) => {
-    if (req.session && req.session.adminId) {
-        return res.redirect('/admin');
-    }
-
+    if (req.session?.adminId) return res.redirect('/admin/dashboard');
     res.render('admin/login', {
-        title: 'Admin Login - 48Roots',
-        description: 'Admin Login',
-        layout: 'layout',
-        isAdmin: false,
-        additionalCSS: ['admin/login.css', 'admin/common.css'],
+        title: 'Admin Login',
+        additionalCSS: ['admin/login.css'],
         additionalJS: ['admin/login.js'],
-        error: null,
+        layout: 'layout',
+        description: 'Admin Login',
+        isAdmin: false,
+        error: req.flash?.('error'),
+        success: req.flash?.('success'),
     });
 };
 
-/**
- * POST Login
- */
+// POST login
 exports.login = async (req, res) => {
     try {
         const { email, password } = req.body;
-
-        if (!email || !password) {
-            return res.status(400).json({ success: false, message: 'Missing email or password' });
-        }
+        if (!email || !password)
+            return res.status(400).json({ success: false, message: 'Email & password required' });
 
         const admin = await Admin.findOne({ email: email.toLowerCase() });
+        if (!admin)
+            return res
+                .status(401)
+                .json({ success: false, message: 'User not found in the system' });
 
-        if (!admin) {
-            return res.status(401).json({ success: false, message: 'Invalid email' });
-        }
+        const valid = await bcrypt.compare(password, admin.password);
+        if (!valid) return res.status(401).json({ success: false, message: 'Invalid credentials' });
 
-        // Check active
-        if (!admin.isActive) {
-            return res.status(403).json({
-                success: false,
-                message: 'Account deactivated. Contact system owner.',
-            });
-        }
-
-        // Check locked
-        if (admin.isLocked()) {
-            return res.status(403).json({
-                success: false,
-                message: 'Too many failed attempts. Try again later.',
-            });
-        }
-
-        const valid = await admin.comparePassword(password);
-
-        if (!valid) {
-            await admin.incrementLoginAttempts();
-            return res.status(401).json({ success: false, message: 'Wrong password' });
-        }
-
-        await admin.resetLoginAttempts();
-
-        // Create session
         req.session.adminId = admin._id;
-        req.session.adminName = admin.name;
-        req.session.adminRole = admin.role;
+        req.session.adminName = admin.fullName;
 
-        return res.json({ success: true, redirect: '/admin' });
-    } catch (error) {
-        logger.error('Admin login error:', error);
-        res.status(500).json({ success: false, message: 'Server error' });
+        const token = jwt.sign({ adminId: admin._id }, process.env.JWT_SECRET || 'secret', {
+            expiresIn: '30d',
+        });
+
+        req.session.token = token;
+
+        res.json({
+            success: true,
+            message: 'Login successful',
+            admin: { id: admin._id, name: admin.fullName, email: admin.email },
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Login error' });
     }
 };
 
-/**
- * Logout
- */
+// Logout
 exports.logout = (req, res) => {
     req.session.destroy(() => {
+        res.clearCookie('connect.sid');
         res.redirect('/admin/login');
     });
 };
 
-/**
- * Middleware: Must be logged in
- */
-exports.isAuthenticated = (req, res, next) => {
-    if (!req.session || !req.session.adminId) {
+// Middleware: only admin
+exports.isAuthenticated = async (req, res, next) => {
+    if (!req.session?.adminId) {
+        if (req.path.startsWith('/api/'))
+            return res.status(401).json({ success: false, message: 'Auth required' });
         return res.redirect('/admin/login');
     }
+
+    const admin = await Admin.findById(req.session.adminId);
+    if (!admin) {
+        req.session.destroy();
+        return res.redirect('/admin/login');
+    }
+
+    req.admin = admin;
     next();
-};
-
-/**
- * Middleware: Must have specific admin roles
- * Example: isAdmin('super_admin', 'admin')
- */
-exports.isAdmin = (...roles) => {
-    return (req, res, next) => {
-        if (!req.session || !req.session.adminId) {
-            return res.redirect('/admin/login');
-        }
-
-        if (!roles.length || roles.includes(req.session.adminRole)) {
-            return next();
-        }
-
-        return res.status(403).render('admin/403', {
-            title: 'Forbidden',
-            layout: 'layout',
-            message: 'You do not have permission to access this area.',
-        });
-    };
 };

@@ -60,10 +60,6 @@ a {
     transition: color var(--transition-fast);
 }
 
-a:hover {
-    color: var(--primary-hover);
-}
-
 img {
     max-width: 100%;
     height: auto;

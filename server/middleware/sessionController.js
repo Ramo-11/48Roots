@@ -1,4 +1,3 @@
-// server/middleware/sessionController.js
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
 const { logger } = require('../utils/logger');
@@ -15,6 +14,8 @@ if (!baseUri) {
 
 const mongoUri = `${baseUri}${baseUri.includes('?') ? '&' : '?'}dbName=${dbName}`;
 
+process.env.MONGODB_URI = mongoUri;
+
 const sessionMiddleware = session({
     secret: process.env.SESSION_SECRET || 'your-secret-key-change-this-in-production',
     resave: false,
@@ -22,7 +23,7 @@ const sessionMiddleware = session({
     rolling: true,
     store: MongoStore.create({
         mongoUrl: mongoUri,
-        touchAfter: 24 * 3600, // lazy session update
+        touchAfter: 24 * 3600,
     }),
     cookie: {
         secure: isProd && process.env.SECURE_COOKIES !== 'false',
@@ -30,7 +31,7 @@ const sessionMiddleware = session({
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
         sameSite: 'lax',
     },
-    name: '48roots.sid', // custom session name
+    name: '48roots.sid',
 });
 
 module.exports = { sessionMiddleware };

@@ -1,4 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
+    initializeNavToggle();
+    initializeSearch();
+    initializeCart();
+    initializeScrollBehavior();
+});
+
+function initializeNavToggle() {
     const navToggle = document.getElementById('navToggle');
     const navMenu = document.getElementById('navMenu');
     const navLinks = document.querySelectorAll('.nav-link');
@@ -25,13 +32,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Set active link
     navLinks.forEach((link) => {
         const linkPath = new URL(link.href).pathname;
         if (linkPath === currentPath) {
             link.classList.add('active');
         }
     });
+}
 
+function initializeScrollBehavior() {
     let lastScrollTop = 0;
     const nav = document.querySelector('.nav');
 
@@ -50,31 +60,52 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         { passive: true }
     );
-
-    initializeSearch();
-    initializeCart();
-});
+}
 
 function initializeCart() {
-    const cartBtn = document.getElementById('cartBtn');
-    if (cartBtn) {
-        cartBtn.addEventListener('click', () => {
-            window.location.href = '/cart';
-        });
-    }
-
     updateCartCount();
 }
 
 function initializeSearch() {
-    const searchInput = document.getElementById('navSearchInput');
-    const searchBtn = document.querySelector('.nav-search-btn');
+    const searchBtn = document.getElementById('searchBtn');
+    const searchOverlay = document.getElementById('searchOverlay');
+    const searchClose = document.getElementById('searchClose');
+    const searchInput = document.getElementById('searchInput');
+    const searchForm = document.getElementById('searchForm');
+    const searchResults = document.getElementById('searchResults');
 
-    if (!searchInput) return;
+    if (!searchBtn || !searchOverlay) return;
 
+    // Open search overlay
+    searchBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        searchOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => searchInput?.focus(), 100);
+    });
+
+    // Close search overlay
+    searchClose?.addEventListener('click', () => {
+        closeSearchOverlay();
+    });
+
+    // Close on overlay background click
+    searchOverlay.addEventListener('click', (e) => {
+        if (e.target === searchOverlay) {
+            closeSearchOverlay();
+        }
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && searchOverlay.classList.contains('active')) {
+            closeSearchOverlay();
+        }
+    });
+
+    // Live search
     let searchTimeout;
-
-    searchInput.addEventListener('input', (e) => {
+    searchInput?.addEventListener('input', (e) => {
         clearTimeout(searchTimeout);
         const query = e.target.value.trim();
 
@@ -88,88 +119,76 @@ function initializeSearch() {
         }, 300);
     });
 
-    searchBtn.addEventListener('click', () => {
-        const query = searchInput.value.trim();
-        if (query.length >= 2) {
-            window.location.href = `/shop?search=${encodeURIComponent(query)}`;
+    // Form submit
+    searchForm?.addEventListener('submit', (e) => {
+        const query = searchInput?.value.trim();
+        if (query && query.length >= 2) {
+            // Form will submit naturally to /shop
+        } else {
+            e.preventDefault();
         }
     });
 
-    searchInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            const query = searchInput.value.trim();
-            if (query.length >= 2) {
-                window.location.href = `/shop?search=${encodeURIComponent(query)}`;
+    function closeSearchOverlay() {
+        searchOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+        if (searchInput) searchInput.value = '';
+        hideSearchResults();
+    }
+
+    async function performSearch(query) {
+        try {
+            const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+            const result = await response.json();
+
+            if (result.success) {
+                displaySearchResults(result.data, query);
             }
+        } catch (error) {
+            console.error('Search error:', error);
         }
-    });
+    }
 
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.nav-search')) {
-            hideSearchResults();
+    function displaySearchResults(products, query) {
+        if (!searchResults) return;
+
+        if (!products.length) {
+            searchResults.innerHTML = '<div class="search-no-results">No products found</div>';
+            searchResults.classList.add('active');
+            return;
         }
-    });
-}
 
-async function performSearch(query) {
-    try {
-        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-        const result = await response.json();
+        searchResults.innerHTML = products
+            .slice(0, 5)
+            .map(
+                (product) => `
+                <a href="/product/${product.slug}" class="search-result-item">
+                    <img src="${product.images[0]?.url || '/images/placeholder.png'}" alt="${product.name}">
+                    <div class="search-result-info">
+                        <div class="search-result-name">${product.name}</div>
+                        <div class="search-result-price">$${product.price.toFixed(2)}</div>
+                    </div>
+                </a>
+            `
+            )
+            .join('');
 
-        if (result.success) {
-            displaySearchResults(result.data);
+        if (products.length > 5) {
+            searchResults.innerHTML += `
+                <a href="/shop?search=${encodeURIComponent(query)}" class="search-view-all">
+                    View all ${products.length} results →
+                </a>
+            `;
         }
-    } catch (error) {
-        console.error('Search error:', error);
-    }
-}
 
-function displaySearchResults(products) {
-    let resultsContainer = document.getElementById('searchResults');
-
-    if (!resultsContainer) {
-        resultsContainer = document.createElement('div');
-        resultsContainer.id = 'searchResults';
-        resultsContainer.className = 'search-results';
-        document.querySelector('.nav-search').appendChild(resultsContainer);
+        searchResults.classList.add('active');
     }
 
-    if (!products.length) {
-        resultsContainer.innerHTML = '<div class="search-result-item">No products found</div>';
-        resultsContainer.classList.add('active');
-        return;
-    }
-
-    resultsContainer.innerHTML = products
-        .slice(0, 5)
-        .map(
-            (product) => `
-        <a href="/product/${product.slug}" class="search-result-item">
-            <img src="${product.images[0]?.url || '/images/placeholder.png'}" alt="${product.name}">
-            <div class="search-result-info">
-                <div class="search-result-name">${product.name}</div>
-                <div class="search-result-price">$${product.price.toFixed(2)}</div>
-            </div>
-        </a>
-    `
-        )
-        .join('');
-
-    if (products.length > 5) {
-        resultsContainer.innerHTML += `
-            <a href="/shop?search=${encodeURIComponent(document.getElementById('navSearchInput').value)}" class="search-view-all">
-                View all ${products.length} results
-            </a>
-        `;
-    }
-
-    resultsContainer.classList.add('active');
-}
-
-function hideSearchResults() {
-    const resultsContainer = document.getElementById('searchResults');
-    if (resultsContainer) {
-        resultsContainer.classList.remove('active');
+    function hideSearchResults() {
+        if (searchResults) {
+            searchResults.classList.remove('active');
+            searchResults.innerHTML = '';
+        }
     }
 }
 
@@ -183,6 +202,7 @@ async function updateCartCount() {
             const cartCountEl = document.getElementById('cartCount');
             if (cartCountEl) {
                 cartCountEl.textContent = count;
+                cartCountEl.style.display = count > 0 ? 'flex' : 'none';
             }
         }
     } catch (error) {

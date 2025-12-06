@@ -1,38 +1,30 @@
 const express = require('express');
 require('dotenv').config();
 
+const router = express.Router();
+
 const { logger } = require('./utils/logger');
 
-// Controllers
+// Controllers — Public
 const pageController = require('./controllers/pageController');
 const shopController = require('./controllers/shopController');
 const cartController = require('./controllers/cartController');
 const checkoutController = require('./controllers/checkoutController');
 const searchController = require('./controllers/searchController');
-const printfulAdminController = require('./controllers/admin/printfulController');
 
-// Auth Controller (NEW SYSTEM)
+// Admin Controllers
 const authController = require('./controllers/authController');
+const printfulAdminController = require('./controllers/admin/printfulController');
 
 // Models
 const Settings = require('../models/Settings');
 const Announcement = require('../models/Announcement');
 const Order = require('../models/Order');
 
-// Printful utilities
 const { getPrintfulOrderStatus } = require('./config/printful');
 
-// Router instance
-const router = express.Router();
-
-// Stripe public key
-const isProd = process.env.NODE_ENV === 'production';
-process.env.STRIPE_PUBLIC_KEY = isProd
-    ? process.env.STRIPE_PUBLIC_KEY_PROD
-    : process.env.STRIPE_PUBLIC_KEY_TEST;
-
 /* ============================================================================
-    PUBLIC PAGES
+    PUBLIC ROUTES
 ============================================================================ */
 router.get('/', pageController.getHome);
 router.get('/shop', pageController.getShop);
@@ -52,122 +44,102 @@ router.get('/privacy-policy', pageController.getPrivacyPolicy);
 router.get('/terms-of-service', pageController.getTermsOfService);
 
 /* ============================================================================
-    AUTH (Admin Login)
+    AUTH (ADMIN)
 ============================================================================ */
 router.get('/admin/login', authController.getLogin);
 router.post('/auth/login', authController.login);
-router.get('/logout', authController.logout);
+router.get('/admin/logout', authController.logout);
 
 /* ============================================================================
-    ADMIN DASHBOARD PAGES
+    ADMIN DASHBOARD (Protected)
 ============================================================================ */
-router.get(
-    '/admin',
-    authController.isAuthenticated,
-    authController.isAdmin,
-    pageController.getAdminDashboard
-);
+router.get('/admin/dashboard', authController.isAuthenticated, pageController.getAdminDashboard);
 
 /* ============================================================================
-    ADMIN API — PROTECTED
+    ADMIN API — Protected
 ============================================================================ */
 router.get(
     '/api/admin/printful/status',
     authController.isAuthenticated,
-    authController.isAdmin,
     printfulAdminController.getSyncStatus
 );
 
 router.post(
     '/api/admin/printful/sync',
     authController.isAuthenticated,
-    authController.isAdmin,
     printfulAdminController.syncAllProducts
 );
 
 router.post(
     '/api/admin/printful/sync/:printfulProductId',
     authController.isAuthenticated,
-    authController.isAdmin,
     printfulAdminController.syncSingleProduct
 );
 
 router.get(
     '/api/admin/products',
     authController.isAuthenticated,
-    authController.isAdmin,
     printfulAdminController.getProducts
 );
 
 router.put(
     '/api/admin/products/:productId',
     authController.isAuthenticated,
-    authController.isAdmin,
     printfulAdminController.updateProduct
 );
 
 router.put(
     '/api/admin/products/:productId/toggle-active',
     authController.isAuthenticated,
-    authController.isAdmin,
     printfulAdminController.toggleProductStatus
 );
 
 router.put(
     '/api/admin/products/:productId/toggle-featured',
     authController.isAuthenticated,
-    authController.isAdmin,
     printfulAdminController.toggleProductFeatured
 );
 
 router.delete(
     '/api/admin/products/:productId',
     authController.isAuthenticated,
-    authController.isAdmin,
     printfulAdminController.deleteProduct
 );
 
 router.get(
     '/api/admin/orders',
     authController.isAuthenticated,
-    authController.isAdmin,
     printfulAdminController.getRecentOrders
 );
 
 router.post(
     '/api/admin/orders/:orderId/refresh',
     authController.isAuthenticated,
-    authController.isAdmin,
     printfulAdminController.refreshOrderStatus
 );
 
 /* ============================================================================
-    PRODUCT API
+    PUBLIC APIs
 ============================================================================ */
+// Products
 router.get('/api/products', shopController.getProducts);
 router.get('/api/products/featured', shopController.getFeaturedProducts);
 router.get('/api/products/related/:productId', shopController.getRelatedProducts);
 router.get('/api/products/:slug', shopController.getProductBySlug);
 
-/* ============================================================================
-    CART API
-============================================================================ */
+// Cart
 router.post('/api/cart/add', cartController.addToCart);
 router.post('/api/cart/update', cartController.updateCartItem);
 router.post('/api/cart/remove', cartController.removeFromCart);
 router.get('/api/cart', cartController.getCartData);
 
-/* ============================================================================
-    CHECKOUT API
-============================================================================ */
+// Checkout
 router.post('/api/checkout/create-session', checkoutController.createCheckoutSession);
 router.post('/api/checkout/confirm', checkoutController.confirmOrder);
 router.post('/api/checkout/calculate-shipping', checkoutController.calculateShipping);
 router.get('/api/orders/:orderNumber', checkoutController.getOrderByNumber);
 
-/* ============================================================================
-    SEARCH API
-============================================================================ */
+// Search
 router.get('/api/search', searchController.searchProducts);
 
 /* ============================================================================
@@ -243,7 +215,6 @@ router.get('/api/health', (req, res) => {
         success: true,
         status: 'healthy',
         timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV || 'development',
     });
 });
 

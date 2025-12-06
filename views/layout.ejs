@@ -10,13 +10,10 @@
     <link rel="icon" type="image/png" href="/images/favicon.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="/css/variables.css">
-
-    <% if (!isAdmin) { %>
-        <link rel="stylesheet" href="/css/common.css">
-        <link rel="stylesheet" href="/css/layout.css">
-        <link rel="stylesheet" href="/css/nav.css">
-        <link rel="stylesheet" href="/css/footer.css">
-    <% } %>
+    <link rel="stylesheet" href="/css/footer.css">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/nav.css">
 
      <% if (typeof additionalCSS !== 'undefined') { %> <%
             additionalCSS.forEach(function(css) { %>
@@ -40,14 +37,14 @@
     <div class="admin-layout">
         <aside class="admin-sidebar">
             <div class="admin-sidebar-header">
-                <a href="/admin" class="admin-logo">
+                <a href="/admin/dashboard" class="admin-logo">
                     <img src="/images/logo.png" class="admin-logo-img" alt="logo">
                     <span class="admin-logo-text">Admin</span>
                 </a>
             </div>
 
             <nav class="admin-nav">
-                <a href="/admin" class="admin-nav-link"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a>
+                <a href="/admin/dashboard" class="admin-nav-link"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a>
                 <a href="#productsSection" class="admin-nav-link"><i class="fas fa-box"></i><span>Products</span></a>
                 <a href="#ordersSection" class="admin-nav-link"><i class="fas fa-shopping-bag"></i><span>Orders</span></a>
                 <a href="/" class="admin-nav-link" target="_blank"><i class="fas fa-external-link-alt"></i><span>View Store</span></a>

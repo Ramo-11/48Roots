@@ -246,7 +246,7 @@ const getTermsOfService = (req, res) => {
 
 const getAdminLogin = (req, res) => {
     if (req.session?.adminId) {
-        return res.redirect('/admin');
+        return res.redirect('/admin/login');
     }
 
     res.render('admin/login', {

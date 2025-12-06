@@ -29,6 +29,7 @@
         "express": "^5.1.0",
         "express-session": "^1.18.1",
         "flatpickr": "^4.6.13",
+        "jsonwebtoken": "^9.0.2",
         "mongodb": "^6.17.0",
         "mongoose": "^8.16.2",
         "multer": "^2.0.2",

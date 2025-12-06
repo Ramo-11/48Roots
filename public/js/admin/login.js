@@ -1,60 +1,83 @@
+// Login Page JavaScript (Admin Only)
+
+// Toggle password visibility
+function togglePassword() {
+    const passwordInput = document.getElementById('password');
+    const toggleIcon = document.getElementById('passwordToggleIcon');
+
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleIcon.classList.remove('fa-eye');
+        toggleIcon.classList.add('fa-eye-slash');
+    } else {
+        passwordInput.type = 'password';
+        toggleIcon.classList.remove('fa-eye-slash');
+        toggleIcon.classList.add('fa-eye');
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('loginForm');
-    const loginBtn = document.getElementById('loginBtn');
-    const loginError = document.getElementById('loginError');
-    const btnText = loginBtn.querySelector('.btn-text');
-    const btnLoading = loginBtn.querySelector('.btn-loading');
+    if (!loginForm) return;
+
+    const submitBtn = loginForm.querySelector('.btn-login');
+    const btnText = submitBtn.querySelector('.btn-text');
+    const btnLoading = submitBtn.querySelector('.btn-loading');
+
+    // Simple fallback notification
+    function showError(message) {
+        alert(message); // Replace with SweetAlert, Toastify, etc. if you want later
+    }
 
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const username = document.getElementById('username').value.trim();
-        const password = document.getElementById('password').value;
+        btnText.style.display = 'none';
+        btnLoading.style.display = 'flex';
+        submitBtn.disabled = true;
 
-        if (!username || !password) {
-            showError('Please enter username and password');
-            return;
-        }
-
-        setLoading(true);
-        hideError();
+        const formData = {
+            email: document.getElementById('email').value.trim(),
+            password: document.getElementById('password').value,
+        };
 
         try {
-            const response = await fetch('/api/admin/login', {
+            const response = await fetch('/auth/login', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ username, password }),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData),
             });
 
             const data = await response.json();
 
             if (data.success) {
-                window.location.href = '/admin';
+                window.location.href = '/admin/dashboard';
             } else {
-                showError(data.message || 'Invalid credentials');
+                throw new Error(data.message || 'Login failed');
             }
         } catch (error) {
-            console.error('Login error:', error);
-            showError('An error occurred. Please try again.');
-        } finally {
-            setLoading(false);
+            showError(error.message || 'Invalid username or password');
+
+            btnText.style.display = 'block';
+            btnLoading.style.display = 'none';
+            submitBtn.disabled = false;
+
+            loginForm.classList.add('shake');
+            setTimeout(() => loginForm.classList.remove('shake'), 500);
         }
     });
 
-    function setLoading(loading) {
-        loginBtn.disabled = loading;
-        btnText.style.display = loading ? 'none' : 'inline-flex';
-        btnLoading.style.display = loading ? 'inline-flex' : 'none';
-    }
-
-    function showError(message) {
-        loginError.textContent = message;
-        loginError.style.display = 'block';
-    }
-
-    function hideError() {
-        loginError.style.display = 'none';
-    }
+    // Shake CSS injection
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+        20%, 40%, 60%, 80% { transform: translateX(5px); }
+      }
+      .shake {
+        animation: shake 0.5s;
+      }
+    `;
+    document.head.appendChild(style);
 });
