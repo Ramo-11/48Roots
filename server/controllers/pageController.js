@@ -1,6 +1,11 @@
 const { logger } = require('../utils/logger');
 const Product = require('../../models/Product');
-const { isAdmin } = require('./authController');
+require('dotenv').config({ quiet: true });
+
+const isProd = process.env.NODE_ENV === 'production';
+process.env.STRIPE_PUBLIC_KEY = isProd
+    ? process.env.STRIPE_PUBLIC_KEY_PROD
+    : process.env.STRIPE_PUBLIC_KEY_TEST;
 
 // ==========================================
 // Public Page Handlers
@@ -63,14 +68,14 @@ const getProductDetail = async (req, res) => {
             });
         }
 
-        res.render('product', {
+        res.render('product-detail', {
             title: `${product.name} - 48 Roots`,
             description: product.description || `Shop ${product.name} from 48 Roots.`,
             isAdmin: false,
             currentPage: 'shop',
             product,
-            additionalCSS: ['product.css'],
-            additionalJS: ['pages/product.js'],
+            additionalCSS: ['product-detail.css'],
+            additionalJS: ['pages/product-detail.js'],
         });
     } catch (error) {
         logger.error('Error rendering product page:', error);
@@ -152,6 +157,7 @@ const getCheckout = (req, res) => {
         isAdmin: false,
         currentPage: 'checkout',
         stripePublicKey: process.env.STRIPE_PUBLIC_KEY,
+        googleKey: process.env.GOOGLE_PLACES_API_KEY,
         additionalCSS: ['checkout.css'],
         additionalJS: ['pages/checkout.js'],
     });
@@ -269,6 +275,26 @@ const getAdminDashboard = (req, res) => {
     });
 };
 
+const getAdminProducts = (req, res) => {
+    res.render('admin/products', {
+        title: 'Products - Admin - 48 Roots',
+        description: 'Manage products in the admin dashboard.',
+        isAdmin: true,
+        additionalCSS: ['admin/common.css'],
+        additionalJS: ['admin/products.js'],
+    });
+};
+
+const getAdminOrders = (req, res) => {
+    res.render('admin/orders', {
+        title: 'Orders - Admin - 48 Roots',
+        description: 'Manage orders in the admin dashboard.',
+        isAdmin: true,
+        additionalCSS: ['admin/common.css'],
+        additionalJS: ['admin/orders.js'],
+    });
+};
+
 module.exports = {
     getHome,
     getShop,
@@ -288,4 +314,6 @@ module.exports = {
     getTermsOfService,
     getAdminLogin,
     getAdminDashboard,
+    getAdminProducts,
+    getAdminOrders,
 };

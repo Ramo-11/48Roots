@@ -54,6 +54,8 @@ router.get('/admin/logout', authController.logout);
     ADMIN DASHBOARD (Protected)
 ============================================================================ */
 router.get('/admin/dashboard', authController.isAuthenticated, pageController.getAdminDashboard);
+router.get('/admin/products', authController.isAuthenticated, pageController.getAdminProducts);
+router.get('/admin/orders', authController.isAuthenticated, pageController.getAdminOrders);
 
 /* ============================================================================
     ADMIN API — Protected

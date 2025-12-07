@@ -1,0 +1,199 @@
+<header class="admin-header">
+    <h1 class="admin-page-title">Orders</h1>
+    <div class="admin-header-actions">
+        <button type="button" class="btn btn-secondary" id="refreshOrdersBtn">
+            <i class="fas fa-refresh"></i> Refresh
+        </button>
+        <button type="button" class="btn btn-secondary" id="exportOrdersBtn">
+            <i class="fas fa-download"></i> Export CSV
+        </button>
+    </div>
+</header>
+
+<div class="admin-content">
+    <!-- Stats -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon orders">
+                <i class="fas fa-shopping-bag"></i>
+            </div>
+            <div class="stat-info">
+                <span class="stat-label">Total Orders</span>
+                <span class="stat-value" id="totalOrders">-</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon pending">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="stat-info">
+                <span class="stat-label">Pending</span>
+                <span class="stat-value" id="pendingOrders">-</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon processing">
+                <i class="fas fa-cog"></i>
+            </div>
+            <div class="stat-info">
+                <span class="stat-label">Processing</span>
+                <span class="stat-value" id="processingOrders">-</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon shipped">
+                <i class="fas fa-truck"></i>
+            </div>
+            <div class="stat-info">
+                <span class="stat-label">Shipped</span>
+                <span class="stat-value" id="shippedOrders">-</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon revenue">
+                <i class="fas fa-dollar-sign"></i>
+            </div>
+            <div class="stat-info">
+                <span class="stat-label">Total Revenue</span>
+                <span class="stat-value" id="totalRevenue">-</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="admin-filters">
+        <div class="filter-group">
+            <label for="paymentFilter">Payment:</label>
+            <select id="paymentFilter" class="form-select">
+                <option value="all">All</option>
+                <option value="completed">Completed</option>
+                <option value="pending">Pending</option>
+                <option value="failed">Failed</option>
+                <option value="refunded">Refunded</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="fulfillmentFilter">Fulfillment:</label>
+            <select id="fulfillmentFilter" class="form-select">
+                <option value="all">All</option>
+                <option value="pending">Pending</option>
+                <option value="processing">Processing</option>
+                <option value="shipped">Shipped</option>
+                <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="dateFilter">Date:</label>
+            <select id="dateFilter" class="form-select">
+                <option value="all">All Time</option>
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+                <option value="year">This Year</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <input type="text" id="searchInput" class="form-input" placeholder="Search orders..." />
+        </div>
+    </div>
+
+    <!-- Orders Table -->
+    <section class="admin-section">
+        <div class="table-container">
+            <table class="admin-table" id="ordersTable">
+                <thead>
+                    <tr>
+                        <th class="th-order sortable" data-sort="orderNumber">Order #</th>
+                        <th class="th-date sortable" data-sort="date">Date</th>
+                        <th class="th-customer">Customer</th>
+                        <th class="th-email">Email</th>
+                        <th class="th-items">Items</th>
+                        <th class="th-total sortable" data-sort="total">Total</th>
+                        <th class="th-payment">Payment</th>
+                        <th class="th-fulfillment">Fulfillment</th>
+                        <th class="th-printful">Printful</th>
+                        <th class="th-actions">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="ordersTableBody">
+                    <tr>
+                        <td colspan="10" class="loading-state">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <span>Loading orders...</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Pagination -->
+    <div class="pagination" id="pagination">
+        <button class="btn btn-secondary btn-sm" id="prevPage" disabled>
+            <i class="fas fa-chevron-left"></i> Previous
+        </button>
+        <span class="page-info"
+            >Page <span id="currentPage">1</span> of <span id="totalPages">1</span></span
+        >
+        <button class="btn btn-secondary btn-sm" id="nextPage" disabled>
+            Next <i class="fas fa-chevron-right"></i>
+        </button>
+    </div>
+</div>
+
+<!-- Order Detail Modal -->
+<div class="modal-overlay" id="orderDetailModal">
+    <div class="modal modal-lg">
+        <div class="modal-header">
+            <h3 class="modal-title">Order Details - <span id="modalOrderNumber"></span></h3>
+            <button type="button" class="modal-close" data-dismiss="modal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="order-detail-grid">
+                <div class="order-detail-section">
+                    <h4>Customer Information</h4>
+                    <div id="customerInfo"></div>
+                </div>
+                <div class="order-detail-section">
+                    <h4>Shipping Address</h4>
+                    <div id="shippingInfo"></div>
+                </div>
+            </div>
+
+            <div class="order-detail-section">
+                <h4>Order Items</h4>
+                <div class="order-items-table" id="orderItemsTable"></div>
+            </div>
+
+            <div class="order-detail-grid">
+                <div class="order-detail-section">
+                    <h4>Payment</h4>
+                    <div id="paymentInfo"></div>
+                </div>
+                <div class="order-detail-section">
+                    <h4>Fulfillment</h4>
+                    <div id="fulfillmentInfo"></div>
+                </div>
+            </div>
+
+            <div class="order-detail-section" id="trackingSection" style="display: none">
+                <h4>Tracking Information</h4>
+                <div id="trackingInfo"></div>
+            </div>
+
+            <div class="order-totals" id="orderTotals"></div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" id="refreshOrderBtn">
+                <i class="fas fa-sync-alt"></i> Refresh Status
+            </button>
+            <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>

@@ -1,50 +1,64 @@
+// services/stripeService.js
+const { logger } = require('../utils/logger');
+
+// Load correct key based on environment
 const stripe = require('stripe')(
     process.env.NODE_ENV === 'production'
         ? process.env.STRIPE_SECRET_KEY_PROD
         : process.env.STRIPE_SECRET_KEY_TEST
 );
-const { logger } = require('../utils/logger');
 
+/* ============================================================
+   CREATE PAYMENT INTENT
+============================================================ */
 const createPaymentIntent = async (amount, options = {}) => {
     try {
         const paymentIntent = await stripe.paymentIntents.create({
             amount,
             currency: 'usd',
-            automatic_payment_methods: {
-                enabled: true,
-            },
-            ...options,
+            automatic_payment_methods: { enabled: true },
+            ...options, // allows metadata or customer info
         });
 
         return paymentIntent;
     } catch (error) {
-        logger.error('Stripe payment intent creation failed:', error);
+        logger.error('Stripe payment intent creation failed:', error.message);
         throw error;
     }
 };
 
+/* ============================================================
+   RETRIEVE PAYMENT INTENT
+============================================================ */
 const retrievePaymentIntent = async (paymentIntentId) => {
     try {
         return await stripe.paymentIntents.retrieve(paymentIntentId);
     } catch (error) {
-        logger.error('Stripe payment intent retrieval failed:', error);
+        logger.error('Stripe payment intent retrieval failed:', error.message);
         throw error;
     }
 };
 
-const createRefund = async (paymentIntentId, amount) => {
+/* ============================================================
+   CREATE REFUND
+============================================================ */
+const createRefund = async (paymentIntentId, amount = null) => {
     try {
-        return await stripe.refunds.create({
-            payment_intent: paymentIntentId,
-            amount,
-        });
+        const refundData = { payment_intent: paymentIntentId };
+        if (amount) refundData.amount = amount;
+
+        return await stripe.refunds.create(refundData);
     } catch (error) {
-        logger.error('Stripe refund failed:', error);
+        logger.error('Stripe refund failed:', error.message);
         throw error;
     }
 };
 
+/* ============================================================
+   EXPORTS
+============================================================ */
 module.exports = {
+    stripe,
     createPaymentIntent,
     retrievePaymentIntent,
     createRefund,

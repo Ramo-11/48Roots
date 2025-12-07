@@ -6,6 +6,28 @@ const { createPaymentIntent, retrievePaymentIntent } = require('../config/stripe
 const { createPrintfulOrder, calculatePrintfulShipping } = require('../config/printful');
 
 /**
+ * Fallback shipping rules when not using Printful
+ */
+function calculateRegionBasedShipping(subtotal, country) {
+    const rules = {
+        US: { cost: 4.99, free: 75 },
+        CA: { cost: 6.99, free: 100 },
+        GB: { cost: 6.99, free: 100 },
+        UK: { cost: 6.99, free: 100 },
+        DE: { cost: 7.99, free: 100 },
+        AU: { cost: 7.99, free: 100 },
+    };
+
+    const region = rules[country] || rules['US']; // Default: US pricing
+
+    if (subtotal >= region.free) {
+        return 0;
+    }
+
+    return region.cost;
+}
+
+/**
  * Create a checkout session with Stripe payment intent
  */
 exports.createCheckoutSession = async (req, res) => {
@@ -49,7 +71,7 @@ exports.createCheckoutSession = async (req, res) => {
 };
 
 /**
- * Calculate shipping costs using Printful API
+ * Calculate shipping using STATIC region-based rules
  */
 exports.calculateShipping = async (req, res) => {
     try {
@@ -72,54 +94,25 @@ exports.calculateShipping = async (req, res) => {
             });
         }
 
-        let shippingCost = 0;
-
-        // Prepare items for Printful shipping calculation
-        const printfulItems = cart.items
-            .map((item) => {
-                // Get the Printful variant ID from the product
-                const variant = item.product.variants?.find((v) => v.size === item.variant.size);
-
-                if (variant?.printfulVariantId || variant?.printfulSyncVariantId) {
-                    return {
-                        printfulVariantId: variant.printfulVariantId,
-                        printfulSyncVariantId: variant.printfulSyncVariantId,
-                        quantity: item.quantity,
-                    };
-                }
-                return null;
-            })
-            .filter(Boolean);
-
-        // Try Printful shipping calculation if we have Printful products
-        if (printfulItems.length > 0 && process.env.PRINTFUL_API_TOKEN) {
-            try {
-                shippingCost = await calculatePrintfulShipping(printfulItems, {
-                    line1: address.line1 || address.address1,
-                    city: address.city,
-                    state: address.state,
-                    postalCode: address.postalCode || address.zip,
-                    country: address.country || 'US',
-                });
-            } catch (printfulError) {
-                logger.error(
-                    'Printful shipping calculation failed, using fallback:',
-                    printfulError
-                );
-            }
-        }
-
-        // Fallback to flat rate if Printful fails or no Printful products
-        if (shippingCost === 0) {
-            const flatRate = (await Settings.get('shipping_flat_rate')) || 5.99;
-            shippingCost = flatRate;
-        }
-
-        // Check for free shipping threshold
         const subtotal = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-        const freeShippingThreshold = await Settings.get('free_shipping_threshold');
 
-        if (freeShippingThreshold && subtotal >= freeShippingThreshold) {
+        // Static shipping rules by region
+        const shippingRules = {
+            US: { cost: 4.99, freeThreshold: 75 },
+            CA: { cost: 6.99, freeThreshold: 100 },
+            GB: { cost: 6.99, freeThreshold: 100 },
+            UK: { cost: 6.99, freeThreshold: 100 }, // alias
+            DE: { cost: 7.99, freeThreshold: 100 },
+            AU: { cost: 7.99, freeThreshold: 100 },
+        };
+
+        const country = (address.country || 'US').toUpperCase();
+        const region = shippingRules[country] || shippingRules['US'];
+
+        let shippingCost = region.cost;
+
+        // Free shipping threshold
+        if (subtotal >= region.freeThreshold) {
             shippingCost = 0;
         }
 
@@ -131,7 +124,7 @@ exports.calculateShipping = async (req, res) => {
             },
         });
     } catch (error) {
-        logger.error('Error calculating shipping:', error);
+        logger.error('Error calculating static shipping:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to calculate shipping',
@@ -140,14 +133,14 @@ exports.calculateShipping = async (req, res) => {
 };
 
 /**
- * Confirm and process the order
+ * Confirm and process an order
  */
 exports.confirmOrder = async (req, res) => {
     try {
         const { paymentIntentId, shippingAddress, customer } = req.body;
         const sessionId = req.session.id;
 
-        // Verify payment
+        // Verify payment via Stripe
         const paymentIntent = await retrievePaymentIntent(paymentIntentId);
 
         if (paymentIntent.status !== 'succeeded') {
@@ -166,47 +159,37 @@ exports.confirmOrder = async (req, res) => {
             });
         }
 
-        // Calculate totals
+        // Calculate subtotal
         const subtotal = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-        // Get shipping cost
-        let shippingCost = 0;
-        const printfulItems = cart.items
-            .map((item) => {
-                const variant = item.product.variants?.find((v) => v.size === item.variant.size);
-                if (variant?.printfulVariantId || variant?.printfulSyncVariantId) {
-                    return {
-                        printfulVariantId: variant.printfulVariantId,
-                        printfulSyncVariantId: variant.printfulSyncVariantId,
-                        quantity: item.quantity,
-                    };
-                }
-                return null;
-            })
-            .filter(Boolean);
+        // STATIC SHIPPING RULES
+        const shippingRules = {
+            US: { cost: 4.99, freeThreshold: 75 },
+            CA: { cost: 6.99, freeThreshold: 100 },
+            GB: { cost: 6.99, freeThreshold: 100 },
+            UK: { cost: 6.99, freeThreshold: 100 },
+            DE: { cost: 7.99, freeThreshold: 100 },
+            AU: { cost: 7.99, freeThreshold: 100 },
+        };
 
-        if (printfulItems.length > 0) {
-            shippingCost = await calculatePrintfulShipping(printfulItems, shippingAddress);
-        }
+        const country = (shippingAddress.country || 'US').toUpperCase();
+        const region = shippingRules[country] || shippingRules['US'];
 
-        if (shippingCost === 0) {
-            shippingCost = (await Settings.get('shipping_flat_rate')) || 5.99;
-        }
-
-        // Check free shipping
-        const freeShippingThreshold = await Settings.get('free_shipping_threshold');
-        if (freeShippingThreshold && subtotal >= freeShippingThreshold) {
+        let shippingCost = region.cost;
+        if (subtotal >= region.freeThreshold) {
             shippingCost = 0;
         }
 
+        // Donation amount
         const donationAmount = (await Settings.get('donation_per_purchase')) || 5.0;
 
-        // Create the order in our database
+        // Create order in our DB
         const order = await Order.create({
             customer,
             shippingAddress,
             items: cart.items.map((item) => {
                 const variant = item.product.variants?.find((v) => v.size === item.variant.size);
+
                 return {
                     product: item.product._id,
                     productSnapshot: {
@@ -242,7 +225,7 @@ exports.confirmOrder = async (req, res) => {
             },
         });
 
-        // Create order in Printful
+        // Build Printful items
         const printfulOrderItems = cart.items
             .map((item) => {
                 const variant = item.product.variants?.find((v) => v.size === item.variant.size);
@@ -262,6 +245,7 @@ exports.confirmOrder = async (req, res) => {
             })
             .filter(Boolean);
 
+        // If Printful items exist → create order in Printful
         if (printfulOrderItems.length > 0) {
             const printfulResult = await createPrintfulOrder({
                 orderNumber: order.orderNumber,
@@ -276,27 +260,17 @@ exports.confirmOrder = async (req, res) => {
                 order.fulfillment.printfulOrderId = printfulResult.printfulOrderId;
                 order.fulfillment.status = 'processing';
                 await order.save();
-                logger.info(
-                    `Printful order created for ${order.orderNumber}: ${printfulResult.printfulOrderId}`
-                );
             } else {
-                logger.error(
-                    `Printful order creation failed for ${order.orderNumber}:`,
-                    printfulResult.error
-                );
-                // Order is still saved, can be manually processed later
                 order.notes = `Printful order creation failed: ${printfulResult.error}`;
                 await order.save();
             }
         } else {
-            logger.warn(
-                `No Printful items in order ${order.orderNumber} - manual fulfillment required`
-            );
+            // Non-Printful order → manual fulfillment
             order.notes = 'No Printful products - manual fulfillment required';
             await order.save();
         }
 
-        // Clear the cart
+        // Clear cart
         await Cart.deleteOne({ sessionId });
 
         res.json({

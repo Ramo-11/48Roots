@@ -375,7 +375,7 @@ exports.getProducts = async (req, res) => {
     try {
         const products = await Product.find({})
             .select(
-                'name slug price images printfulSyncProductId isActive isFeatured category createdAt'
+                'name slug price compareAtPrice description images printfulSyncProductId isActive isFeatured category variants createdAt'
             )
             .sort({ createdAt: -1 })
             .lean();
@@ -385,12 +385,15 @@ exports.getProducts = async (req, res) => {
             name: p.name,
             slug: p.slug,
             price: p.price,
+            compareAtPrice: p.compareAtPrice,
+            description: p.description,
             image: p.images?.[0]?.url || '/images/placeholder.png',
             category: p.category,
             isActive: p.isActive,
             isFeatured: p.isFeatured,
             isSynced: !!p.printfulSyncProductId,
             printfulId: p.printfulSyncProductId,
+            variantCount: p.variants?.length || 0,
             createdAt: p.createdAt,
         }));
 
@@ -615,6 +618,61 @@ exports.refreshOrderStatus = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to refresh order',
+        });
+    }
+};
+
+/**
+ * Get recent orders with full details
+ */
+exports.getRecentOrders = async (req, res) => {
+    try {
+        const orders = await Order.find({})
+            .sort({ createdAt: -1 })
+            .limit(100)
+            .populate('items.product')
+            .lean();
+
+        const formattedOrders = orders.map((o) => ({
+            _id: o._id,
+            orderNumber: o.orderNumber,
+            customerName: `${o.customer?.firstName || ''} ${o.customer?.lastName || ''}`.trim(),
+            customerEmail: o.customer?.email,
+            customerPhone: o.customer?.phone,
+            shippingAddress: o.shippingAddress,
+            items: o.items?.map((item) => ({
+                name: item.productSnapshot?.name || item.product?.name,
+                image: item.productSnapshot?.image || item.product?.images?.[0]?.url,
+                variant: item.variant,
+                quantity: item.quantity,
+                price: item.price,
+            })),
+            itemCount: o.items?.reduce((sum, item) => sum + item.quantity, 0) || 0,
+            subtotal: o.subtotal,
+            shippingCost: o.shipping?.cost,
+            donation: o.donation?.amount,
+            total: o.total,
+            paymentStatus: o.payment?.status,
+            paymentMethod: o.payment?.method,
+            paidAt: o.payment?.paidAt,
+            fulfillmentStatus: o.fulfillment?.status,
+            printfulOrderId: o.fulfillment?.printfulOrderId,
+            printfulOrderStatus: o.fulfillment?.printfulOrderStatus,
+            trackingNumber: o.fulfillment?.trackingNumber,
+            trackingUrl: o.fulfillment?.trackingUrl,
+            carrier: o.fulfillment?.carrier,
+            createdAt: o.createdAt,
+        }));
+
+        res.json({
+            success: true,
+            data: formattedOrders,
+        });
+    } catch (error) {
+        logger.error('Error getting orders:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get orders',
         });
     }
 };
