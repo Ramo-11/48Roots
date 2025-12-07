@@ -16,6 +16,7 @@ exports.searchProducts = async (req, res) => {
 
         const products = await Product.find({
             isActive: true,
+            printfulSyncProductId: { $exists: true, $ne: null },
             $or: [
                 { name: { $regex: searchQuery, $options: 'i' } },
                 { description: { $regex: searchQuery, $options: 'i' } },

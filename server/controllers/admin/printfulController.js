@@ -184,7 +184,8 @@ exports.syncAllProducts = async (req, res) => {
         }
 
         const storeInfo = await getStoreInfo();
-        if (!storeInfo || storeInfo.length === 0) {
+        if (!storeInfo) {
+            logger.error(`GET request to /store returned an error`);
             return res.status(500).json({
                 success: false,
                 message: 'Unable to connect to Printful. Please check your API token.',
@@ -392,6 +393,7 @@ exports.getProducts = async (req, res) => {
             isActive: p.isActive,
             isFeatured: p.isFeatured,
             isSynced: !!p.printfulSyncProductId,
+            isLocalOnly: !p.printfulSyncProductId, // New field for admin UI
             printfulId: p.printfulSyncProductId,
             variantCount: p.variants?.length || 0,
             createdAt: p.createdAt,

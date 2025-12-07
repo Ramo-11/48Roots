@@ -177,9 +177,11 @@ function renderProducts(products) {
                 ${product.isFeatured ? '<span class="status-badge featured">Featured</span>' : ''}
             </td>
             <td class="td-sync">
-                <span class="status-badge ${product.isSynced ? 'synced' : 'unsynced'}">
-                    ${product.isSynced ? '✓ Synced' : 'Local'}
-                </span>
+                ${
+                    product.isLocalOnly
+                        ? '<span class="status-badge local-only"><i class="fas fa-exclamation-triangle"></i> Local Only</span>'
+                        : '<span class="status-badge synced">✓ Synced</span>'
+                }
             </td>
             <td class="td-date">${formatDate(product.createdAt)}</td>
             <td class="td-actions">

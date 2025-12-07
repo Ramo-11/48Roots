@@ -226,7 +226,14 @@
     background: #f5f5f5;
     color: #757575;
 }
+.status-badge.local-only {
+    background: #fff3cd;
+    color: #856404;
+}
 
+.status-badge.local-only i {
+    margin-right: 4px;
+}
 /* ============================
    ACTION BUTTONS
 ============================ */
@@ -267,56 +274,6 @@
 .loading-state i {
     font-size: 2rem;
     margin-bottom: var(--spacing-md);
-}
-
-/* ============================
-   MODALS
-============================ */
-.modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 200;
-}
-
-.modal-overlay.active {
-    display: flex;
-}
-
-.modal {
-    background: var(--color-white);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
-    width: 100%;
-    max-width: 600px;
-    padding: var(--spacing-lg);
-}
-
-.modal-lg {
-    max-width: 800px;
-}
-.modal-sm {
-    max-width: 400px;
-}
-
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.modal-title {
-    font-weight: 600;
-}
-
-.modal-close {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--color-text-muted);
 }
 
 /* ============================

@@ -7,27 +7,45 @@ require('dotenv').config();
    PRINTFUL CLIENT (Axios)
 ============================================================ */
 const printfulClient = axios.create({
-    baseURL: 'https://api.printful.com',
+    baseURL: 'https://api.printful.com/v2',
     headers: {
         Authorization: `Bearer ${process.env.PRINTFUL_API_TOKEN}`,
         'Content-Type': 'application/json',
+        'X-PF-Store-Id': process.env.PRINTFUL_STORE_ID,
     },
     timeout: 30000,
 });
 
 // Log failed responses
 printfulClient.interceptors.response.use(
-    (res) => res,
+    (res) => {
+        return res;
+    },
     (err) => {
         if (err.response) {
-            logger.error('Printful API Error:', {
-                status: err.response.status,
-                data: err.response.data,
-                url: err.config?.url,
-            });
+            const { status, data, headers } = err.response;
+
+            logger.error('Printful API Error:');
+            logger.error(`Status: ${status}`);
+            logger.error(`URL: ${err.config?.url}`);
+
+            // Safe logging of data (non-circular)
+            try {
+                logger.error(`Response Data: ${JSON.stringify(data, null, 2)}`);
+            } catch {
+                logger.error('Response Data (raw):', data);
+            }
+
+            // Optionally log headers
+            try {
+                logger.error(`Headers: ${JSON.stringify(headers, null, 2)}`);
+            } catch {
+                logger.error('Headers (raw):', headers);
+            }
         } else {
             logger.error('Printful API Network Error:', err.message);
         }
+
         return Promise.reject(err);
     }
 );
@@ -53,16 +71,28 @@ async function post(endpoint, body = {}, params = {}) {
 ============================================================ */
 async function getStoreInfo() {
     try {
-        return await get('/stores');
+        const res = await printfulClient.get('/stores');
+        // V2 uses 'data' not 'result'
+        return res.data.data || [];
     } catch (err) {
-        logger.error('Failed to get store info:', err.message);
-        return null;
+        logger.error('Error in getStoreInfo:', err.response?.data || err);
+        return [];
     }
 }
 
 /* ============================================================
    SYNC PRODUCTS
 ============================================================ */
+const printfulClientV1 = axios.create({
+    baseURL: 'https://api.printful.com', // V1 base URL (no /v2)
+    headers: {
+        Authorization: `Bearer ${process.env.PRINTFUL_API_TOKEN}`,
+        'Content-Type': 'application/json',
+        'X-PF-Store-Id': process.env.PRINTFUL_STORE_ID,
+    },
+    timeout: 30000,
+});
+
 async function getSyncProducts() {
     try {
         const products = [];
@@ -71,7 +101,7 @@ async function getSyncProducts() {
         let more = true;
 
         while (more) {
-            const response = await printfulClient.get('/store/products', {
+            const response = await printfulClientV1.get('/sync/products', {
                 params: { offset, limit },
             });
 
@@ -98,7 +128,8 @@ async function getSyncProducts() {
 ============================================================ */
 async function getSyncProductDetails(syncProductId) {
     try {
-        const response = await printfulClient.get(`/store/products/${syncProductId}`);
+        // Use V1 endpoint
+        const response = await printfulClientV1.get(`/sync/products/${syncProductId}`);
         if (response.data.code === 200) return response.data.result;
         return null;
     } catch (err) {
@@ -290,6 +321,7 @@ function normalizePrintfulSize(size) {
 ============================================================ */
 module.exports = {
     printfulClient,
+    printfulClientV1,
     getStoreInfo,
     getSyncProducts,
     getSyncProductDetails,

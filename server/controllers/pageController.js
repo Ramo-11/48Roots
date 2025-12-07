@@ -13,7 +13,12 @@ process.env.STRIPE_PUBLIC_KEY = isProd
 
 const getHome = async (req, res) => {
     try {
-        const featuredProducts = await Product.find({ isActive: true, isFeatured: true })
+        // Only show featured products that are synced with Printful
+        const featuredProducts = await Product.find({
+            isActive: true,
+            isFeatured: true,
+            printfulSyncProductId: { $exists: true, $ne: null },
+        })
             .limit(4)
             .lean();
 
@@ -59,7 +64,13 @@ const getShop = async (req, res) => {
 const getProductDetail = async (req, res) => {
     try {
         const { slug } = req.params;
-        const product = await Product.findOne({ slug, isActive: true }).lean();
+
+        // Only show product if it's active AND synced with Printful
+        const product = await Product.findOne({
+            slug,
+            isActive: true,
+            printfulSyncProductId: { $exists: true, $ne: null },
+        }).lean();
 
         if (!product) {
             return res.status(404).render('404', {

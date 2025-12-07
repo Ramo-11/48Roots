@@ -1,5 +1,6 @@
 const Cart = require('../../models/Cart');
 const Order = require('../../models/Order');
+const Product = require('../../models/Product');
 const Settings = require('../../models/Settings');
 const { logger } = require('../utils/logger');
 const { createPaymentIntent, retrievePaymentIntent } = require('../config/stripe');
@@ -18,13 +19,33 @@ function calculateRegionBasedShipping(subtotal, country) {
         AU: { cost: 7.99, free: 100 },
     };
 
-    const region = rules[country] || rules['US']; // Default: US pricing
+    const region = rules[country] || rules['US'];
 
     if (subtotal >= region.free) {
         return 0;
     }
 
     return region.cost;
+}
+
+/**
+ * Validate cart items before checkout
+ */
+async function validateCartForCheckout(cart) {
+    const validation = await Product.validateCartForPurchase(cart.items);
+
+    if (!validation.valid) {
+        const errorMessages = validation.errors.map(
+            (e) => `${e.productName || 'Product'}: ${e.error}`
+        );
+        return {
+            valid: false,
+            message: `Some items in your cart are not available: ${errorMessages.join(', ')}`,
+            errors: validation.errors,
+        };
+    }
+
+    return { valid: true };
 }
 
 /**
@@ -47,6 +68,16 @@ exports.createCheckoutSession = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: 'Cart is empty',
+            });
+        }
+
+        // Validate all items are purchasable
+        const validation = await validateCartForCheckout(cart);
+        if (!validation.valid) {
+            return res.status(400).json({
+                success: false,
+                message: validation.message,
+                errors: validation.errors,
             });
         }
 
@@ -101,7 +132,7 @@ exports.calculateShipping = async (req, res) => {
             US: { cost: 4.99, freeThreshold: 75 },
             CA: { cost: 6.99, freeThreshold: 100 },
             GB: { cost: 6.99, freeThreshold: 100 },
-            UK: { cost: 6.99, freeThreshold: 100 }, // alias
+            UK: { cost: 6.99, freeThreshold: 100 },
             DE: { cost: 7.99, freeThreshold: 100 },
             AU: { cost: 7.99, freeThreshold: 100 },
         };
@@ -111,7 +142,6 @@ exports.calculateShipping = async (req, res) => {
 
         let shippingCost = region.cost;
 
-        // Free shipping threshold
         if (subtotal >= region.freeThreshold) {
             shippingCost = 0;
         }
@@ -156,6 +186,16 @@ exports.confirmOrder = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: 'Cart is empty',
+            });
+        }
+
+        // Final validation before order creation
+        const validation = await validateCartForCheckout(cart);
+        if (!validation.valid) {
+            return res.status(400).json({
+                success: false,
+                message: validation.message,
+                errors: validation.errors,
             });
         }
 
@@ -265,9 +305,10 @@ exports.confirmOrder = async (req, res) => {
                 await order.save();
             }
         } else {
-            // Non-Printful order → manual fulfillment
+            // This should not happen if validation is working correctly
             order.notes = 'No Printful products - manual fulfillment required';
             await order.save();
+            logger.warn(`Order ${order.orderNumber} has no Printful items despite validation`);
         }
 
         // Clear cart

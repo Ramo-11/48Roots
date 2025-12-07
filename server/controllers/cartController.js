@@ -25,6 +25,7 @@ exports.addToCart = async (req, res) => {
         }
 
         const product = await Product.findById(productId);
+
         if (!product || !product.isActive) {
             return res.status(404).json({
                 success: false,
@@ -32,8 +33,32 @@ exports.addToCart = async (req, res) => {
             });
         }
 
+        // Check if product is synced with Printful
+        if (!product.printfulSyncProductId) {
+            return res.status(400).json({
+                success: false,
+                message: 'This product is not available for purchase',
+            });
+        }
+
         const productVariant = product.variants.find((v) => v.size === variant.size);
-        if (!productVariant || productVariant.stock < quantity) {
+
+        if (!productVariant) {
+            return res.status(400).json({
+                success: false,
+                message: 'Variant not found',
+            });
+        }
+
+        // Check if variant is synced with Printful
+        if (!productVariant.printfulSyncVariantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'This variant is not available for purchase',
+            });
+        }
+
+        if (productVariant.stock < quantity) {
             return res.status(400).json({
                 success: false,
                 message: 'Insufficient stock',
@@ -195,9 +220,42 @@ exports.getCartData = async (req, res) => {
 
         const cart = await getOrCreateCart(sessionId);
 
+        // Filter out any items that are no longer purchasable
+        const validItems = [];
+        const removedItems = [];
+
+        for (const item of cart.items) {
+            const product = item.product;
+
+            if (!product || !product.isActive || !product.printfulSyncProductId) {
+                removedItems.push(item);
+                continue;
+            }
+
+            const variant = product.variants.find((v) => v.size === item.variant.size);
+            if (!variant || !variant.printfulSyncVariantId) {
+                removedItems.push(item);
+                continue;
+            }
+
+            validItems.push(item);
+        }
+
+        // If items were removed, update the cart
+        if (removedItems.length > 0) {
+            cart.items = validItems;
+            cart.calculateSubtotal();
+            await cart.save();
+            await cart.populate('items.product');
+        }
+
         res.json({
             success: true,
             data: cart,
+            removedItems:
+                removedItems.length > 0
+                    ? removedItems.map((i) => i.product?.name || 'Unknown product')
+                    : undefined,
         });
     } catch (error) {
         logger.error('Error fetching cart:', error);

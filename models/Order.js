@@ -194,7 +194,6 @@ const orderSchema = new mongoose.Schema(
 orderSchema.index({ 'customer.email': 1 });
 orderSchema.index({ 'payment.status': 1 });
 orderSchema.index({ 'fulfillment.status': 1 });
-orderSchema.index({ 'fulfillment.printfulOrderId': 1 });
 orderSchema.index({ createdAt: -1 });
 
 // Generate order number before save

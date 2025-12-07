@@ -1,11 +1,18 @@
 const Product = require('../../models/Product');
 const { logger } = require('../utils/logger');
 
+// Base filter for purchasable products (synced with Printful)
+const PURCHASABLE_FILTER = {
+    isActive: true,
+    printfulSyncProductId: { $exists: true, $ne: null },
+};
+
 exports.getProducts = async (req, res) => {
     try {
         const { categories, sizes, sort } = req.query;
 
-        const filter = { isActive: true };
+        // Start with purchasable filter
+        const filter = { ...PURCHASABLE_FILTER };
 
         if (categories) {
             const categoryArray = categories.split(',');
@@ -56,7 +63,10 @@ exports.getProducts = async (req, res) => {
 
 exports.getFeaturedProducts = async (req, res) => {
     try {
-        const products = await Product.find({ isActive: true, isFeatured: true })
+        const products = await Product.find({
+            ...PURCHASABLE_FILTER,
+            isFeatured: true,
+        })
             .limit(8)
             .select('name slug description price compareAtPrice images category variants')
             .lean();
@@ -78,7 +88,11 @@ exports.getProductBySlug = async (req, res) => {
     try {
         const { slug } = req.params;
 
-        const product = await Product.findOne({ slug, isActive: true }).lean();
+        // Only return if product is purchasable (synced with Printful)
+        const product = await Product.findOne({
+            slug,
+            ...PURCHASABLE_FILTER,
+        }).lean();
 
         if (!product) {
             return res.status(404).json({
@@ -113,10 +127,11 @@ exports.getRelatedProducts = async (req, res) => {
             });
         }
 
+        // Only return purchasable related products
         const relatedProducts = await Product.find({
             _id: { $ne: productId },
             category: product.category,
-            isActive: true,
+            ...PURCHASABLE_FILTER,
         })
             .limit(8)
             .select('name slug price compareAtPrice images category variants isFeatured')
