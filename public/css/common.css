@@ -431,6 +431,79 @@ img {
     display: block;
 }
 
+/* ============================
+   PROMOTION BANNER
+============================ */
+.promo-banner-container {
+    width: 100%;
+}
+
+.promo-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 40px 10px 20px;
+    position: relative;
+    color: white;
+    text-align: center;
+    animation: promoBannerSlide 0.3s ease;
+}
+
+@keyframes promoBannerSlide {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.promo-banner-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.promo-banner-text {
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+.promo-banner-code {
+    font-size: 13px;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 4px 12px;
+    border-radius: 4px;
+}
+
+.promo-banner-code strong {
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.promo-banner-close {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    padding: 4px 8px;
+    font-size: 14px;
+    transition: color 0.2s;
+}
+
+.promo-banner-close:hover {
+    color: white;
+}
+
 @media (max-width: 768px) {
     h1 {
         font-size: var(--font-size-3xl);
@@ -463,5 +536,22 @@ img {
 
     .modal-footer .btn {
         width: 100%;
+    }
+
+    .promo-banner {
+        padding: 8px 36px 8px 12px;
+    }
+
+    .promo-banner-content {
+        gap: 8px;
+    }
+
+    .promo-banner-text {
+        font-size: 12px;
+    }
+
+    .promo-banner-code {
+        font-size: 11px;
+        padding: 2px 8px;
     }
 }

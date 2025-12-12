@@ -100,10 +100,10 @@
                         <th class="th-name sortable" data-sort="name">Name</th>
                         <th class="th-category">Category</th>
                         <th class="th-price sortable" data-sort="price">Price</th>
+                        <th class="th-cost">Cost / Profit</th>
                         <th class="th-variants">Variants</th>
                         <th class="th-status">Status</th>
                         <th class="th-sync">Sync</th>
-                        <th class="th-date sortable" data-sort="date">Created</th>
                         <th class="th-actions">Actions</th>
                     </tr>
                 </thead>
@@ -132,6 +132,24 @@
         <form id="editProductForm">
             <div class="modal-body">
                 <input type="hidden" id="editProductId" />
+                <input type="hidden" id="editProductSlug" />
+
+                <!-- Images Section -->
+                <div class="form-section">
+                    <h4 class="form-section-title">Product Images</h4>
+                    <div class="product-images-editor">
+                        <div class="images-grid" id="imagesGrid">
+                            <!-- Images will be loaded here -->
+                        </div>
+                        <div class="image-upload-area">
+                            <input type="file" id="imageUploadInput" accept="image/jpeg,image/png,image/webp" hidden />
+                            <button type="button" class="btn btn-secondary btn-sm" id="addImageBtn">
+                                <i class="fas fa-plus"></i> Add Image
+                            </button>
+                            <span class="upload-hint">JPEG, PNG, or WebP (max 10MB)</span>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="form-row">
                     <div class="form-group flex-2">

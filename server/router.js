@@ -15,6 +15,13 @@ const searchController = require('./controllers/searchController');
 // Admin Controllers
 const authController = require('./controllers/authController');
 const printfulAdminController = require('./controllers/admin/printfulController');
+const promotionAdminController = require('./controllers/admin/promotionController');
+const analyticsAdminController = require('./controllers/admin/analyticsController');
+const cloudinaryController = require('./controllers/cloudinaryController');
+
+// Public Controllers
+const promotionController = require('./controllers/promotionController');
+const analyticsController = require('./controllers/analyticsController');
 
 // Models
 const Settings = require('../models/Settings');
@@ -56,6 +63,8 @@ router.get('/admin/logout', authController.logout);
 router.get('/admin/dashboard', authController.isAuthenticated, pageController.getAdminDashboard);
 router.get('/admin/products', authController.isAuthenticated, pageController.getAdminProducts);
 router.get('/admin/orders', authController.isAuthenticated, pageController.getAdminOrders);
+router.get('/admin/promotions', authController.isAuthenticated, pageController.getAdminPromotions);
+router.get('/admin/analytics', authController.isAuthenticated, pageController.getAdminAnalytics);
 
 /* ============================================================================
     ADMIN API — Protected
@@ -108,6 +117,26 @@ router.delete(
     printfulAdminController.deleteProduct
 );
 
+// Product Image Upload
+router.post(
+    '/api/admin/products/:productId/image',
+    authController.isAuthenticated,
+    cloudinaryController.upload.single('image'),
+    cloudinaryController.handleImageUpload
+);
+
+router.put(
+    '/api/admin/products/:productId/images',
+    authController.isAuthenticated,
+    printfulAdminController.updateProductImages
+);
+
+router.get(
+    '/api/admin/products/:productId/edit',
+    authController.isAuthenticated,
+    printfulAdminController.getProductForEdit
+);
+
 router.get(
     '/api/admin/orders',
     authController.isAuthenticated,
@@ -118,6 +147,96 @@ router.post(
     '/api/admin/orders/:orderId/refresh',
     authController.isAuthenticated,
     printfulAdminController.refreshOrderStatus
+);
+
+/* ============================================================================
+    ADMIN API — Promotions
+============================================================================ */
+router.get(
+    '/api/admin/promotions',
+    authController.isAuthenticated,
+    promotionAdminController.getPromotions
+);
+
+router.get(
+    '/api/admin/promotions/products',
+    authController.isAuthenticated,
+    promotionAdminController.getProductsForSelection
+);
+
+router.get(
+    '/api/admin/promotions/:promotionId',
+    authController.isAuthenticated,
+    promotionAdminController.getPromotion
+);
+
+router.post(
+    '/api/admin/promotions',
+    authController.isAuthenticated,
+    promotionAdminController.createPromotion
+);
+
+router.put(
+    '/api/admin/promotions/:promotionId',
+    authController.isAuthenticated,
+    promotionAdminController.updatePromotion
+);
+
+router.put(
+    '/api/admin/promotions/:promotionId/toggle-active',
+    authController.isAuthenticated,
+    promotionAdminController.togglePromotionStatus
+);
+
+router.delete(
+    '/api/admin/promotions/:promotionId',
+    authController.isAuthenticated,
+    promotionAdminController.deletePromotion
+);
+
+/* ============================================================================
+    ADMIN API — Analytics
+============================================================================ */
+router.get(
+    '/api/admin/analytics/overview',
+    authController.isAuthenticated,
+    analyticsAdminController.getDashboardOverview
+);
+
+router.get(
+    '/api/admin/analytics/time-series',
+    authController.isAuthenticated,
+    analyticsAdminController.getTimeSeriesData
+);
+
+router.get(
+    '/api/admin/analytics/top-products',
+    authController.isAuthenticated,
+    analyticsAdminController.getTopProducts
+);
+
+router.get(
+    '/api/admin/analytics/traffic-sources',
+    authController.isAuthenticated,
+    analyticsAdminController.getTrafficSources
+);
+
+router.get(
+    '/api/admin/analytics/devices',
+    authController.isAuthenticated,
+    analyticsAdminController.getDeviceBreakdown
+);
+
+router.get(
+    '/api/admin/analytics/searches',
+    authController.isAuthenticated,
+    analyticsAdminController.getRecentSearches
+);
+
+router.get(
+    '/api/admin/analytics/promotions',
+    authController.isAuthenticated,
+    analyticsAdminController.getPromotionAnalytics
 );
 
 /* ============================================================================
@@ -143,6 +262,18 @@ router.get('/api/orders/:orderNumber', checkoutController.getOrderByNumber);
 
 // Search
 router.get('/api/search', searchController.searchProducts);
+
+// Promotions (Public)
+router.get('/api/promotions/banners', promotionController.getActiveBanners);
+router.get('/api/promotions/auto-apply', promotionController.getAutoApplyPromotions);
+router.post('/api/promotions/validate', promotionController.validateCode);
+router.get('/api/promotions/product/:productId', promotionController.getProductPromotions);
+router.post('/api/promotions/calculate-cart', promotionController.calculateCartDiscount);
+
+// Analytics (Public tracking endpoints)
+router.post('/api/analytics/track', analyticsController.trackEvent);
+router.post('/api/analytics/pageview', analyticsController.trackPageView);
+router.post('/api/analytics/product-view', analyticsController.trackProductView);
 
 /* ============================================================================
     SETTINGS API

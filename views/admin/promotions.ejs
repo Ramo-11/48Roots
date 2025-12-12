@@ -1,0 +1,300 @@
+<header class="admin-header">
+    <h1 class="admin-page-title">Promotions</h1>
+    <div class="admin-header-actions">
+        <button type="button" class="btn btn-primary" id="createPromotionBtn">
+            <i class="fas fa-plus"></i> Create Promotion
+        </button>
+    </div>
+</header>
+
+<div class="admin-content">
+    <!-- Stats -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon promotions">
+                <i class="fas fa-tags"></i>
+            </div>
+            <div class="stat-info">
+                <span class="stat-label">Total Promotions</span>
+                <span class="stat-value" id="totalPromotions">-</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon active">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-info">
+                <span class="stat-label">Active</span>
+                <span class="stat-value" id="activePromotions">-</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon scheduled">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="stat-info">
+                <span class="stat-label">Scheduled</span>
+                <span class="stat-value" id="scheduledPromotions">-</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon expired">
+                <i class="fas fa-history"></i>
+            </div>
+            <div class="stat-info">
+                <span class="stat-label">Expired</span>
+                <span class="stat-value" id="expiredPromotions">-</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="admin-filters">
+        <div class="filter-group">
+            <label for="statusFilter">Status:</label>
+            <select id="statusFilter" class="form-select">
+                <option value="all">All</option>
+                <option value="active">Active Now</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="expired">Expired</option>
+                <option value="disabled">Disabled</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="typeFilter">Type:</label>
+            <select id="typeFilter" class="form-select">
+                <option value="all">All Types</option>
+                <option value="percentage">Percentage</option>
+                <option value="fixed">Fixed Amount</option>
+                <option value="free_shipping">Free Shipping</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="scopeFilter">Scope:</label>
+            <select id="scopeFilter" class="form-select">
+                <option value="all">All</option>
+                <option value="global">Global</option>
+                <option value="products">Specific Products</option>
+                <option value="categories">Categories</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Promotions Table -->
+    <section class="admin-section">
+        <div class="table-container">
+            <table class="admin-table" id="promotionsTable">
+                <thead>
+                    <tr>
+                        <th class="th-name">Name</th>
+                        <th class="th-code">Code</th>
+                        <th class="th-type">Type</th>
+                        <th class="th-value">Value</th>
+                        <th class="th-scope">Scope</th>
+                        <th class="th-validity">Validity</th>
+                        <th class="th-status">Status</th>
+                        <th class="th-banner">Banner</th>
+                        <th class="th-actions">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="promotionsTableBody">
+                    <tr>
+                        <td colspan="9" class="loading-state">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <span>Loading promotions...</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+<!-- Create/Edit Promotion Modal -->
+<div class="modal-overlay" id="promotionModal">
+    <div class="modal modal-lg">
+        <div class="modal-header">
+            <h3 class="modal-title" id="promotionModalTitle">Create Promotion</h3>
+            <button type="button" class="modal-close" data-dismiss="modal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="promotionForm">
+            <div class="modal-body">
+                <input type="hidden" id="promotionId" />
+
+                <!-- Basic Info -->
+                <div class="form-section">
+                    <h4 class="form-section-title">Basic Information</h4>
+                    <div class="form-row">
+                        <div class="form-group flex-2">
+                            <label for="promotionName" class="form-label">Name *</label>
+                            <input type="text" id="promotionName" class="form-input" required placeholder="e.g., Summer Sale 20% Off" />
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="promotionCode" class="form-label">Code (optional)</label>
+                            <input type="text" id="promotionCode" class="form-input" placeholder="e.g., SUMMER20" style="text-transform: uppercase;" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="promotionDescription" class="form-label">Description *</label>
+                        <textarea id="promotionDescription" class="form-textarea" rows="2" required placeholder="Brief description of the promotion"></textarea>
+                    </div>
+                </div>
+
+                <!-- Discount Settings -->
+                <div class="form-section">
+                    <h4 class="form-section-title">Discount Settings</h4>
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="promotionType" class="form-label">Discount Type *</label>
+                            <select id="promotionType" class="form-select" required>
+                                <option value="percentage">Percentage Off</option>
+                                <option value="fixed">Fixed Amount Off</option>
+                                <option value="free_shipping">Free Shipping</option>
+                            </select>
+                        </div>
+                        <div class="form-group flex-1" id="valueGroup">
+                            <label for="promotionValue" class="form-label">Value *</label>
+                            <div class="input-with-addon">
+                                <span class="input-addon" id="valuePrefix">%</span>
+                                <input type="number" id="promotionValue" class="form-input" min="0" step="0.01" required />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="minPurchase" class="form-label">Min Purchase ($)</label>
+                            <input type="number" id="minPurchase" class="form-input" min="0" step="0.01" value="0" />
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="maxDiscount" class="form-label">Max Discount ($)</label>
+                            <input type="number" id="maxDiscount" class="form-input" min="0" step="0.01" placeholder="No limit" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scope Settings -->
+                <div class="form-section">
+                    <h4 class="form-section-title">Applies To</h4>
+                    <div class="form-group">
+                        <label for="promotionScope" class="form-label">Scope *</label>
+                        <select id="promotionScope" class="form-select" required>
+                            <option value="global">All Products (Global)</option>
+                            <option value="products">Specific Products</option>
+                            <option value="categories">Specific Categories</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="productsSelectGroup" style="display: none;">
+                        <label class="form-label">Select Products</label>
+                        <div class="product-select-container" id="productSelectContainer">
+                            <div class="loading-state">Loading products...</div>
+                        </div>
+                    </div>
+                    <div class="form-group" id="categoriesSelectGroup" style="display: none;">
+                        <label class="form-label">Select Categories</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item"><input type="checkbox" name="categories" value="tshirts" /> T-Shirts</label>
+                            <label class="checkbox-item"><input type="checkbox" name="categories" value="hoodies" /> Hoodies</label>
+                            <label class="checkbox-item"><input type="checkbox" name="categories" value="sweatshirts" /> Sweatshirts</label>
+                            <label class="checkbox-item"><input type="checkbox" name="categories" value="accessories" /> Accessories</label>
+                            <label class="checkbox-item"><input type="checkbox" name="categories" value="other" /> Other</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Validity Period -->
+                <div class="form-section">
+                    <h4 class="form-section-title">Validity Period</h4>
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="validFrom" class="form-label">Start Date *</label>
+                            <input type="datetime-local" id="validFrom" class="form-input" required />
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="validUntil" class="form-label">End Date *</label>
+                            <input type="datetime-local" id="validUntil" class="form-input" required />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Display Options -->
+                <div class="form-section">
+                    <h4 class="form-section-title">Display Options</h4>
+                    <div class="form-row">
+                        <div class="form-check">
+                            <input type="checkbox" id="autoApply" class="form-checkbox" />
+                            <label for="autoApply">Auto-apply (no code needed)</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" id="showBanner" class="form-checkbox" />
+                            <label for="showBanner">Show banner on storefront</label>
+                        </div>
+                    </div>
+                    <div id="bannerOptions" style="display: none;">
+                        <div class="form-row">
+                            <div class="form-group flex-2">
+                                <label for="bannerText" class="form-label">Banner Text</label>
+                                <input type="text" id="bannerText" class="form-input" placeholder="e.g., SUMMER SALE: 20% OFF EVERYTHING!" />
+                            </div>
+                            <div class="form-group flex-1">
+                                <label for="bannerColor" class="form-label">Banner Color</label>
+                                <input type="color" id="bannerColor" class="form-input form-color" value="#c41e3a" />
+                            </div>
+                        </div>
+                        <div class="banner-preview" id="bannerPreview">
+                            <span id="bannerPreviewText">Banner Preview</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advanced -->
+                <div class="form-section">
+                    <h4 class="form-section-title">Advanced</h4>
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="usageLimitTotal" class="form-label">Total Usage Limit</label>
+                            <input type="number" id="usageLimitTotal" class="form-input" min="0" placeholder="Unlimited" />
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="usageLimitPerCustomer" class="form-label">Per Customer Limit</label>
+                            <input type="number" id="usageLimitPerCustomer" class="form-input" min="1" value="1" />
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="priority" class="form-label">Priority</label>
+                            <input type="number" id="priority" class="form-input" min="0" value="0" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="savePromotionBtn">Save Promotion</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" id="deleteConfirmModal">
+    <div class="modal modal-sm">
+        <div class="modal-header">
+            <h3 class="modal-title">Delete Promotion</h3>
+            <button type="button" class="modal-close" data-dismiss="modal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <p>Are you sure you want to delete <strong id="deletePromotionName"></strong>?</p>
+            <p class="text-muted">This action cannot be undone.</p>
+            <input type="hidden" id="deletePromotionId" />
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>

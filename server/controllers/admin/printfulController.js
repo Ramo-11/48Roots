@@ -274,9 +274,12 @@ exports.syncAllProducts = async (req, res) => {
                 const variants = [];
                 let category = 'other';
                 let price = 0;
+                let baseCost = 0;
 
                 if (sync_variants?.length > 0) {
                     price = parseFloat(sync_variants[0].retail_price) || 0;
+                    // Get the cost from the first variant as base cost
+                    baseCost = parseFloat(sync_variants[0].cost) || 0;
 
                     for (const syncVariant of sync_variants) {
                         if (syncVariant.product) {
@@ -290,6 +293,8 @@ exports.syncAllProducts = async (req, res) => {
                             stock: 999,
                             printfulVariantId: syncVariant.variant_id,
                             printfulSyncVariantId: syncVariant.id,
+                            printfulCost: parseFloat(syncVariant.cost) || 0,
+                            printfulRetailPrice: parseFloat(syncVariant.retail_price) || 0,
                         });
                     }
                 }
@@ -313,6 +318,7 @@ exports.syncAllProducts = async (req, res) => {
                     variants,
                     printfulSyncProductId: sync_product.id,
                     printfulExternalId: sync_product.external_id,
+                    printfulBaseCost: baseCost,
                     isActive: !sync_product.is_ignored,
                 };
 
@@ -376,28 +382,39 @@ exports.getProducts = async (req, res) => {
     try {
         const products = await Product.find({})
             .select(
-                'name slug price compareAtPrice description images printfulSyncProductId isActive isFeatured category variants createdAt'
+                'name slug price compareAtPrice description images printfulSyncProductId printfulBaseCost isActive isFeatured category variants createdAt'
             )
             .sort({ createdAt: -1 })
             .lean();
 
-        const formattedProducts = products.map((p) => ({
-            _id: p._id,
-            name: p.name,
-            slug: p.slug,
-            price: p.price,
-            compareAtPrice: p.compareAtPrice,
-            description: p.description,
-            image: p.images?.[0]?.url || '/images/placeholder.png',
-            category: p.category,
-            isActive: p.isActive,
-            isFeatured: p.isFeatured,
-            isSynced: !!p.printfulSyncProductId,
-            isLocalOnly: !p.printfulSyncProductId, // New field for admin UI
-            printfulId: p.printfulSyncProductId,
-            variantCount: p.variants?.length || 0,
-            createdAt: p.createdAt,
-        }));
+        const formattedProducts = products.map((p) => {
+            // Calculate profit margin using base cost
+            const cost = p.printfulBaseCost || 0;
+            const profit = p.price - cost;
+            const profitMargin = cost > 0 ? ((profit / p.price) * 100).toFixed(1) : 0;
+
+            return {
+                _id: p._id,
+                name: p.name,
+                slug: p.slug,
+                price: p.price,
+                compareAtPrice: p.compareAtPrice,
+                description: p.description,
+                image: p.images?.[0]?.url || '/images/placeholder.png',
+                category: p.category,
+                isActive: p.isActive,
+                isFeatured: p.isFeatured,
+                isSynced: !!p.printfulSyncProductId,
+                isLocalOnly: !p.printfulSyncProductId,
+                printfulId: p.printfulSyncProductId,
+                variantCount: p.variants?.length || 0,
+                // Cost and profit data
+                printfulCost: cost,
+                profit: profit,
+                profitMargin: parseFloat(profitMargin),
+                createdAt: p.createdAt,
+            };
+        });
 
         res.json({
             success: true,
@@ -540,6 +557,84 @@ exports.deleteProduct = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to delete product',
+        });
+    }
+};
+
+/**
+ * Update product images
+ */
+exports.updateProductImages = async (req, res) => {
+    try {
+        const { productId } = req.params;
+        const { images } = req.body;
+
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: 'Product not found',
+            });
+        }
+
+        // Validate images array
+        if (!Array.isArray(images)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Images must be an array',
+            });
+        }
+
+        // Update images
+        product.images = images.map((img, index) => ({
+            url: img.url,
+            alt: img.alt || product.name,
+            isPrimary: index === 0,
+        }));
+
+        await product.save();
+
+        logger.info(`Updated images for product ${productId}`);
+
+        res.json({
+            success: true,
+            data: {
+                images: product.images,
+            },
+        });
+    } catch (error) {
+        logger.error('Error updating product images:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update product images',
+        });
+    }
+};
+
+/**
+ * Get single product with full details for editing
+ */
+exports.getProductForEdit = async (req, res) => {
+    try {
+        const { productId } = req.params;
+
+        const product = await Product.findById(productId).lean();
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: 'Product not found',
+            });
+        }
+
+        res.json({
+            success: true,
+            data: product,
+        });
+    } catch (error) {
+        logger.error('Error getting product for edit:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get product',
         });
     }
 };

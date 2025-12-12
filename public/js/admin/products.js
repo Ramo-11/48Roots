@@ -12,6 +12,7 @@ let filteredProducts = [];
 function initializeProducts() {
     loadProducts();
     setupEventListeners();
+    setupImageUploadHandlers();
 }
 
 function setupEventListeners() {
@@ -167,6 +168,16 @@ function renderProducts(products) {
                 <span class="category-badge">${formatCategory(product.category)}</span>
             </td>
             <td class="td-price">$${product.price.toFixed(2)}</td>
+            <td class="td-cost">
+                ${product.isSynced && product.printfulCost > 0 ? `
+                    <div class="cost-profit-cell">
+                        <span class="cost-value">$${product.printfulCost.toFixed(2)}</span>
+                        <span class="profit-value ${product.profit >= 0 ? 'positive' : 'negative'}">
+                            ${product.profit >= 0 ? '+' : ''}$${product.profit.toFixed(2)} (${product.profitMargin}%)
+                        </span>
+                    </div>
+                ` : '<span class="text-muted">-</span>'}
+            </td>
             <td class="td-variants">
                 ${product.variantCount || '-'}
             </td>
@@ -183,7 +194,6 @@ function renderProducts(products) {
                         : '<span class="status-badge synced">✓ Synced</span>'
                 }
             </td>
-            <td class="td-date">${formatDate(product.createdAt)}</td>
             <td class="td-actions">
                 <div class="action-buttons">
                     <button type="button" class="btn btn-icon btn-sm" onclick="window.open('/product/${product.slug}', '_blank')" title="View">
@@ -222,7 +232,9 @@ function updateStats() {
     ).length;
 }
 
-function openEditModal(productId) {
+let currentProductImages = [];
+
+async function openEditModal(productId) {
     const product = allProducts.find((p) => p._id === productId);
     if (!product) return;
 
@@ -235,8 +247,152 @@ function openEditModal(productId) {
     document.getElementById('editProductActive').checked = product.isActive;
     document.getElementById('editProductFeatured').checked = product.isFeatured;
 
+    // Load full product data with images
+    try {
+        const response = await fetch(`/api/admin/products/${productId}/edit`);
+        const result = await response.json();
+        if (result.success && result.data) {
+            document.getElementById('editProductSlug').value = result.data.slug || '';
+            currentProductImages = result.data.images || [];
+            renderImagesGrid();
+        }
+    } catch (error) {
+        console.error('Error loading product details:', error);
+        currentProductImages = [];
+        renderImagesGrid();
+    }
+
     openModal('editProductModal');
 }
+
+function renderImagesGrid() {
+    const grid = document.getElementById('imagesGrid');
+    if (!grid) return;
+
+    if (currentProductImages.length === 0) {
+        grid.innerHTML = '<p class="text-muted">No images</p>';
+        return;
+    }
+
+    grid.innerHTML = currentProductImages
+        .map(
+            (img, index) => `
+        <div class="image-item ${index === 0 ? 'primary' : ''}" data-index="${index}">
+            <img src="${img.url}" alt="${img.alt || 'Product image'}" />
+            <div class="image-item-actions">
+                ${index !== 0 ? `<button type="button" class="btn-image-action" onclick="setImagePrimary(${index})" title="Set as primary"><i class="fas fa-star"></i></button>` : ''}
+                <button type="button" class="btn-image-action btn-danger" onclick="removeImage(${index})" title="Remove"><i class="fas fa-trash"></i></button>
+            </div>
+            ${index === 0 ? '<span class="image-primary-badge">Primary</span>' : ''}
+        </div>
+    `
+        )
+        .join('');
+}
+
+function setImagePrimary(index) {
+    if (index < 0 || index >= currentProductImages.length) return;
+
+    // Move the selected image to the first position
+    const [selectedImage] = currentProductImages.splice(index, 1);
+    currentProductImages.unshift(selectedImage);
+
+    // Update isPrimary flags
+    currentProductImages.forEach((img, i) => {
+        img.isPrimary = i === 0;
+    });
+
+    renderImagesGrid();
+}
+
+function removeImage(index) {
+    if (index < 0 || index >= currentProductImages.length) return;
+
+    currentProductImages.splice(index, 1);
+
+    // Ensure first image is marked as primary
+    if (currentProductImages.length > 0) {
+        currentProductImages[0].isPrimary = true;
+    }
+
+    renderImagesGrid();
+}
+
+async function uploadImage(file) {
+    const productId = document.getElementById('editProductId').value;
+    const productSlug = document.getElementById('editProductSlug').value;
+
+    if (!productId || !productSlug) {
+        showToast('Product information missing', 'error');
+        return null;
+    }
+
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('productSlug', productSlug);
+
+    try {
+        const response = await fetch(`/api/admin/products/${productId}/image`, {
+            method: 'POST',
+            body: formData,
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            return {
+                url: result.data.url,
+                alt: document.getElementById('editProductName').value || 'Product image',
+                isPrimary: currentProductImages.length === 0,
+            };
+        } else {
+            showToast(result.message || 'Failed to upload image', 'error');
+            return null;
+        }
+    } catch (error) {
+        console.error('Upload error:', error);
+        showToast('Failed to upload image', 'error');
+        return null;
+    }
+}
+
+// Setup image upload handlers
+function setupImageUploadHandlers() {
+    const addImageBtn = document.getElementById('addImageBtn');
+    const imageUploadInput = document.getElementById('imageUploadInput');
+
+    if (addImageBtn && imageUploadInput) {
+        addImageBtn.addEventListener('click', () => {
+            imageUploadInput.click();
+        });
+
+        imageUploadInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Show loading state
+            addImageBtn.disabled = true;
+            addImageBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+
+            const uploadedImage = await uploadImage(file);
+
+            if (uploadedImage) {
+                currentProductImages.push(uploadedImage);
+                renderImagesGrid();
+                showToast('Image uploaded successfully', 'success');
+            }
+
+            // Reset
+            addImageBtn.disabled = false;
+            addImageBtn.innerHTML = '<i class="fas fa-plus"></i> Add Image';
+            imageUploadInput.value = '';
+        });
+    }
+}
+
+// Make image functions globally available
+window.setImagePrimary = setImagePrimary;
+window.removeImage = removeImage;
 
 async function handleEditProduct(e) {
     e.preventDefault();
@@ -254,6 +410,7 @@ async function handleEditProduct(e) {
     };
 
     try {
+        // First update product details
         const response = await fetch(`/api/admin/products/${productId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -262,12 +419,26 @@ async function handleEditProduct(e) {
 
         const result = await response.json();
 
-        if (result.success) {
+        if (!result.success) {
+            showToast(result.message || 'Failed to update product', 'error');
+            return;
+        }
+
+        // Then update images if they were modified
+        const imagesResponse = await fetch(`/api/admin/products/${productId}/images`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ images: currentProductImages }),
+        });
+
+        const imagesResult = await imagesResponse.json();
+
+        if (imagesResult.success) {
             showToast('Product updated successfully', 'success');
             closeModal('editProductModal');
             await loadProducts();
         } else {
-            showToast(result.message || 'Failed to update product', 'error');
+            showToast(imagesResult.message || 'Failed to update images', 'error');
         }
     } catch (error) {
         showToast('Error updating product', 'error');

@@ -282,7 +282,7 @@ const getAdminDashboard = (req, res) => {
         description: 'Manage products, orders, and store settings.',
         isAdmin: true,
         additionalCSS: ['admin/dashboard.css'],
-        additionalJS: ['pages/admin/dashboard.js'],
+        additionalJS: ['admin/dashboard.js'],
     });
 };
 
@@ -303,6 +303,26 @@ const getAdminOrders = (req, res) => {
         isAdmin: true,
         additionalCSS: ['admin/common.css'],
         additionalJS: ['admin/orders.js'],
+    });
+};
+
+const getAdminPromotions = (req, res) => {
+    res.render('admin/promotions', {
+        title: 'Promotions - Admin - 48 Roots',
+        description: 'Manage promotions and discounts.',
+        isAdmin: true,
+        additionalCSS: ['admin/common.css'],
+        additionalJS: ['admin/promotions.js'],
+    });
+};
+
+const getAdminAnalytics = (req, res) => {
+    res.render('admin/analytics', {
+        title: 'Analytics - Admin - 48 Roots',
+        description: 'View store analytics and insights.',
+        isAdmin: true,
+        additionalCSS: ['admin/common.css'],
+        additionalJS: ['admin/analytics.js'],
     });
 };
 
@@ -327,4 +347,6 @@ module.exports = {
     getAdminDashboard,
     getAdminProducts,
     getAdminOrders,
+    getAdminPromotions,
+    getAdminAnalytics,
 };

@@ -67,8 +67,22 @@ const productSchema = new mongoose.Schema(
                     type: Number,
                     index: true,
                 },
+                // Printful cost data
+                printfulCost: {
+                    type: Number,
+                    default: 0,
+                },
+                printfulRetailPrice: {
+                    type: Number,
+                    default: 0,
+                },
             },
         ],
+        // Aggregated cost info (for display)
+        printfulBaseCost: {
+            type: Number,
+            default: 0,
+        },
         printfulSyncProductId: {
             type: Number,
             index: true,

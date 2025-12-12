@@ -17,6 +17,7 @@
     
     <% if (isAdmin) { %>
         <link rel="stylesheet" href="/css/admin/common.css">
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <% } %>
 
      <% if (typeof additionalCSS !== 'undefined') { %> <%
@@ -51,6 +52,8 @@
                 <a href="/admin/dashboard" class="admin-nav-link"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a>
                 <a href="/admin/products" class="admin-nav-link"><i class="fas fa-box"></i><span>Products</span></a>
                 <a href="/admin/orders" class="admin-nav-link"><i class="fas fa-shopping-bag"></i><span>Orders</span></a>
+                <a href="/admin/promotions" class="admin-nav-link"><i class="fas fa-tags"></i><span>Promotions</span></a>
+                <a href="/admin/analytics" class="admin-nav-link"><i class="fas fa-chart-line"></i><span>Analytics</span></a>
                 <a href="/" class="admin-nav-link" target="_blank"><i class="fas fa-external-link-alt"></i><span>View Store</span></a>
             </nav>
 
