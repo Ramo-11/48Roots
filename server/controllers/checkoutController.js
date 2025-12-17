@@ -11,12 +11,36 @@ const { createPrintfulOrder, calculatePrintfulShipping } = require('../config/pr
  */
 function calculateRegionBasedShipping(subtotal, country) {
     const rules = {
-        US: { cost: 4.99, free: 75 },
-        CA: { cost: 6.99, free: 100 },
+        // USA
+        US: { cost: 8.49, free: 75 },
+        // Canada
+        CA: { cost: 10.19, free: 100 },
+        // UK
         GB: { cost: 6.99, free: 100 },
         UK: { cost: 6.99, free: 100 },
-        DE: { cost: 7.99, free: 100 },
-        AU: { cost: 7.99, free: 100 },
+        // Europe
+        DE: { cost: 6.99, free: 100 },
+        FR: { cost: 6.99, free: 100 },
+        IT: { cost: 6.99, free: 100 },
+        ES: { cost: 6.99, free: 100 },
+        NL: { cost: 6.99, free: 100 },
+        BE: { cost: 6.99, free: 100 },
+        AT: { cost: 6.99, free: 100 },
+        PT: { cost: 6.99, free: 100 },
+        IE: { cost: 6.99, free: 100 },
+        PL: { cost: 6.99, free: 100 },
+        // EFTA States
+        CH: { cost: 10.99, free: 100 },
+        NO: { cost: 10.99, free: 100 },
+        IS: { cost: 10.99, free: 100 },
+        LI: { cost: 10.99, free: 100 },
+        // Australia / New Zealand
+        AU: { cost: 11.29, free: 100 },
+        NZ: { cost: 11.29, free: 100 },
+        // Japan
+        JP: { cost: 6.99, free: 100 },
+        // Brazil
+        BR: { cost: 5.99, free: 100 },
     };
 
     const region = rules[country] || rules['US'];
@@ -129,12 +153,36 @@ exports.calculateShipping = async (req, res) => {
 
         // Static shipping rules by region
         const shippingRules = {
-            US: { cost: 4.99, freeThreshold: 75 },
-            CA: { cost: 6.99, freeThreshold: 100 },
+            // USA
+            US: { cost: 8.49, freeThreshold: 75 },
+            // Canada
+            CA: { cost: 10.19, freeThreshold: 100 },
+            // UK
             GB: { cost: 6.99, freeThreshold: 100 },
             UK: { cost: 6.99, freeThreshold: 100 },
-            DE: { cost: 7.99, freeThreshold: 100 },
-            AU: { cost: 7.99, freeThreshold: 100 },
+            // Europe
+            DE: { cost: 6.99, freeThreshold: 100 },
+            FR: { cost: 6.99, freeThreshold: 100 },
+            IT: { cost: 6.99, freeThreshold: 100 },
+            ES: { cost: 6.99, freeThreshold: 100 },
+            NL: { cost: 6.99, freeThreshold: 100 },
+            BE: { cost: 6.99, freeThreshold: 100 },
+            AT: { cost: 6.99, freeThreshold: 100 },
+            PT: { cost: 6.99, freeThreshold: 100 },
+            IE: { cost: 6.99, freeThreshold: 100 },
+            PL: { cost: 6.99, freeThreshold: 100 },
+            // EFTA States
+            CH: { cost: 10.99, freeThreshold: 100 },
+            NO: { cost: 10.99, freeThreshold: 100 },
+            IS: { cost: 10.99, freeThreshold: 100 },
+            LI: { cost: 10.99, freeThreshold: 100 },
+            // Australia / New Zealand
+            AU: { cost: 11.29, freeThreshold: 100 },
+            NZ: { cost: 11.29, freeThreshold: 100 },
+            // Japan
+            JP: { cost: 6.99, freeThreshold: 100 },
+            // Brazil
+            BR: { cost: 5.99, freeThreshold: 100 },
         };
 
         const country = (address.country || 'US').toUpperCase();
@@ -204,12 +252,36 @@ exports.confirmOrder = async (req, res) => {
 
         // STATIC SHIPPING RULES
         const shippingRules = {
-            US: { cost: 4.99, freeThreshold: 75 },
-            CA: { cost: 6.99, freeThreshold: 100 },
+            // USA
+            US: { cost: 8.49, freeThreshold: 75 },
+            // Canada
+            CA: { cost: 10.19, freeThreshold: 100 },
+            // UK
             GB: { cost: 6.99, freeThreshold: 100 },
             UK: { cost: 6.99, freeThreshold: 100 },
-            DE: { cost: 7.99, freeThreshold: 100 },
-            AU: { cost: 7.99, freeThreshold: 100 },
+            // Europe
+            DE: { cost: 6.99, freeThreshold: 100 },
+            FR: { cost: 6.99, freeThreshold: 100 },
+            IT: { cost: 6.99, freeThreshold: 100 },
+            ES: { cost: 6.99, freeThreshold: 100 },
+            NL: { cost: 6.99, freeThreshold: 100 },
+            BE: { cost: 6.99, freeThreshold: 100 },
+            AT: { cost: 6.99, freeThreshold: 100 },
+            PT: { cost: 6.99, freeThreshold: 100 },
+            IE: { cost: 6.99, freeThreshold: 100 },
+            PL: { cost: 6.99, freeThreshold: 100 },
+            // EFTA States
+            CH: { cost: 10.99, freeThreshold: 100 },
+            NO: { cost: 10.99, freeThreshold: 100 },
+            IS: { cost: 10.99, freeThreshold: 100 },
+            LI: { cost: 10.99, freeThreshold: 100 },
+            // Australia / New Zealand
+            AU: { cost: 11.29, freeThreshold: 100 },
+            NZ: { cost: 11.29, freeThreshold: 100 },
+            // Japan
+            JP: { cost: 6.99, freeThreshold: 100 },
+            // Brazil
+            BR: { cost: 5.99, freeThreshold: 100 },
         };
 
         const country = (shippingAddress.country || 'US').toUpperCase();

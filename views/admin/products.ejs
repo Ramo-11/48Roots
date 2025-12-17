@@ -209,6 +209,28 @@
                         <label for="editProductFeatured">Featured (shown on homepage)</label>
                     </div>
                 </div>
+
+                <!-- Variants Section -->
+                <div class="form-section" id="variantsSection" style="display: none;">
+                    <h4 class="form-section-title">Variant Pricing</h4>
+                    <p class="form-section-hint">Prices are synced from Printful. You can adjust them here if needed.</p>
+                    <div class="variants-edit-table-container">
+                        <table class="variants-edit-table" id="variantsEditTable">
+                            <thead>
+                                <tr>
+                                    <th>Size</th>
+                                    <th>Color</th>
+                                    <th>Price ($)</th>
+                                    <th>Cost</th>
+                                    <th>Profit</th>
+                                </tr>
+                            </thead>
+                            <tbody id="variantsEditBody">
+                                <!-- Variants will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>

@@ -19,8 +19,8 @@ const productSchema = new mongoose.Schema(
         },
         price: {
             type: Number,
-            required: true,
             min: 0,
+            // Base price for display - actual price comes from variant
         },
         compareAtPrice: {
             type: Number,
@@ -49,11 +49,20 @@ const productSchema = new mongoose.Schema(
             {
                 size: {
                     type: String,
-                    enum: ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', 'One Size'],
+                    enum: ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL', 'One Size'],
                     required: true,
                 },
                 color: String,
                 sku: String,
+                price: {
+                    type: Number,
+                    min: 0,
+                    required: true,
+                },
+                priceLocked: {
+                    type: Boolean,
+                    default: false,
+                },
                 stock: {
                     type: Number,
                     default: 0,
@@ -152,6 +161,29 @@ productSchema.virtual('isPrintfulSynced').get(function () {
 productSchema.virtual('canPurchase').get(function () {
     return this.isActive && !!this.printfulSyncProductId;
 });
+
+// Virtual to get price range for display (e.g., "$38.00 - $48.50")
+productSchema.virtual('priceRange').get(function () {
+    if (!this.variants || this.variants.length === 0) {
+        return { min: this.price || 0, max: this.price || 0 };
+    }
+    const prices = this.variants.map((v) => v.price).filter((p) => p != null);
+    if (prices.length === 0) {
+        return { min: this.price || 0, max: this.price || 0 };
+    }
+    return {
+        min: Math.min(...prices),
+        max: Math.max(...prices),
+    };
+});
+
+// Method to get price for a specific variant
+productSchema.methods.getVariantPrice = function (size, color) {
+    const variant = this.variants.find(
+        (v) => v.size === size && (!color || v.color === color)
+    );
+    return variant?.price ?? this.price ?? 0;
+};
 
 // Method to get Printful variant by size
 productSchema.methods.getPrintfulVariant = function (size) {

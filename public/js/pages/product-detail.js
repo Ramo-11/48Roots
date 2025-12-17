@@ -28,7 +28,23 @@ async function loadProduct(slug) {
 
 function renderProduct() {
     document.getElementById('productName').textContent = product.name;
-    document.getElementById('productPrice').textContent = `$${product.price.toFixed(2)}`;
+
+    // Display price range if variants have different prices
+    const prices = product.variants
+        .map((v) => v.price)
+        .filter((p) => p != null);
+    if (prices.length > 0) {
+        const minPrice = Math.min(...prices);
+        const maxPrice = Math.max(...prices);
+        if (minPrice === maxPrice) {
+            document.getElementById('productPrice').textContent = `$${minPrice.toFixed(2)}`;
+        } else {
+            document.getElementById('productPrice').textContent = `$${minPrice.toFixed(2)} - $${maxPrice.toFixed(2)}`;
+        }
+    } else {
+        document.getElementById('productPrice').textContent = `$${(product.price || 0).toFixed(2)}`;
+    }
+
     document.getElementById('productDescription').innerHTML = product.description;
     document.getElementById('productCategory').textContent = product.category;
 
@@ -93,8 +109,14 @@ function selectSize(size) {
     });
 
     const variant = product.variants.find((v) => v.size === size);
-    if (variant?.sku) {
-        document.getElementById('productSku').textContent = 'SKU:' + variant.sku;
+    if (variant) {
+        // Update price based on selected variant
+        if (variant.price != null) {
+            document.getElementById('productPrice').textContent = `$${variant.price.toFixed(2)}`;
+        }
+        if (variant.sku) {
+            document.getElementById('productSku').textContent = 'SKU:' + variant.sku;
+        }
     }
 }
 

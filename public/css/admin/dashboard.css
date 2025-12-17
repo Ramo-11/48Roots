@@ -470,6 +470,165 @@
     color: var(--color-text-muted);
 }
 
+/* Variant count in table */
+.variant-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 8px;
+    background: var(--color-background);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--color-text-muted);
+}
+
+/* Variants Edit Section (in modal) */
+.form-section {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.form-section-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0 0 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.form-section-title::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 16px;
+    background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+    border-radius: 2px;
+}
+
+.form-section-hint {
+    font-size: 13px;
+    color: #6b7280;
+    margin: 0 0 16px;
+    padding-left: 12px;
+}
+
+.variants-edit-table-container {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    background: #fafafa;
+}
+
+.variants-edit-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+}
+
+.variants-edit-table th {
+    padding: 12px 16px;
+    text-align: left;
+    background: #f5f5f5;
+    font-weight: 600;
+    color: #333;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.variants-edit-table td {
+    padding: 12px 16px;
+    font-size: 14px;
+    vertical-align: middle;
+    border-bottom: 1px solid #eee;
+    background: #fff;
+}
+
+.variants-edit-table tbody tr:hover td {
+    background: #fafafa;
+}
+
+.variants-edit-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.variants-edit-table .size-cell {
+    font-weight: 600;
+    color: #222;
+}
+
+.variants-edit-table .color-cell {
+    color: #666;
+}
+
+.variants-edit-table .variant-price-input {
+    width: 90px;
+    padding: 8px 10px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #fff;
+}
+
+.variants-edit-table .variant-price-input:focus {
+    outline: none;
+    border-color: #666;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
+}
+
+.variants-edit-table .cost-cell {
+    color: #888;
+    font-size: 14px;
+}
+
+.variants-edit-table .profit-cell {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.variants-edit-table .profit-cell.positive {
+    color: #2e7d32;
+}
+
+.variants-edit-table .profit-cell.negative {
+    color: #c62828;
+}
+
+.btn-lock {
+    background: #f0f0f0;
+    border: 1px solid #ddd;
+    padding: 6px 10px;
+    cursor: pointer;
+    color: #888;
+    font-size: 13px;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+}
+
+.btn-lock:hover {
+    background: #e8e8e8;
+    border-color: #ccc;
+    color: #555;
+}
+
+.btn-lock.locked {
+    background: #e8f5e9;
+    border-color: #a5d6a7;
+    color: #2e7d32;
+}
+
+.btn-lock.locked:hover {
+    background: #c8e6c9;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .stats-grid {

@@ -137,6 +137,12 @@ router.get(
     printfulAdminController.getProductForEdit
 );
 
+router.put(
+    '/api/admin/products/:productId/variants',
+    authController.isAuthenticated,
+    printfulAdminController.updateProductVariants
+);
+
 router.get(
     '/api/admin/orders',
     authController.isAuthenticated,

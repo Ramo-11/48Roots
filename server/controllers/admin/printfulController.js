@@ -125,9 +125,12 @@ exports.syncSingleProduct = async (req, res) => {
                     size: normalizePrintfulSize(syncVariant.size || 'One Size'),
                     color: syncVariant.color || '',
                     sku: syncVariant.sku || `PF-${syncVariant.id}`,
+                    price: parseFloat(syncVariant.retail_price) || 0,
                     stock: 999,
                     printfulVariantId: syncVariant.variant_id,
                     printfulSyncVariantId: syncVariant.id,
+                    printfulCost: parseFloat(syncVariant.cost) || 0,
+                    printfulRetailPrice: parseFloat(syncVariant.retail_price) || 0,
                 });
             }
         }
@@ -147,6 +150,27 @@ exports.syncSingleProduct = async (req, res) => {
             printfulExternalId: sync_product.external_id,
             isActive: !sync_product.is_ignored,
         };
+
+        // Check for existing product and preserve locked prices
+        const existingProduct = await Product.findOne({ printfulSyncProductId: sync_product.id });
+        if (existingProduct) {
+            const updatedVariants = variants.map((newVariant) => {
+                const existingVariant = existingProduct.variants.find(
+                    (v) =>
+                        v.size === newVariant.size &&
+                        ((v.color || '') === (newVariant.color || ''))
+                );
+                if (existingVariant?.priceLocked) {
+                    return {
+                        ...newVariant,
+                        price: existingVariant.price,
+                        priceLocked: true,
+                    };
+                }
+                return newVariant;
+            });
+            productData.variants = updatedVariants;
+        }
 
         const product = await Product.findOneAndUpdate(
             { printfulSyncProductId: sync_product.id },
@@ -290,6 +314,7 @@ exports.syncAllProducts = async (req, res) => {
                             size: normalizePrintfulSize(syncVariant.size || 'One Size'),
                             color: syncVariant.color || '',
                             sku: syncVariant.sku || `PF-${syncVariant.id}`,
+                            price: parseFloat(syncVariant.retail_price) || 0,
                             stock: 999,
                             printfulVariantId: syncVariant.variant_id,
                             printfulSyncVariantId: syncVariant.id,
@@ -328,6 +353,24 @@ exports.syncAllProducts = async (req, res) => {
                 });
 
                 if (existingProduct) {
+                    // Preserve locked prices from existing variants
+                    const updatedVariants = variants.map((newVariant) => {
+                        const existingVariant = existingProduct.variants.find(
+                            (v) =>
+                                v.size === newVariant.size &&
+                                ((v.color || '') === (newVariant.color || ''))
+                        );
+                        if (existingVariant?.priceLocked) {
+                            return {
+                                ...newVariant,
+                                price: existingVariant.price,
+                                priceLocked: true,
+                            };
+                        }
+                        return newVariant;
+                    });
+                    productData.variants = updatedVariants;
+
                     await Product.findByIdAndUpdate(existingProduct._id, productData);
                     updated++;
                     processedProducts.push({ name: sync_product.name, action: 'updated' });
@@ -390,14 +433,22 @@ exports.getProducts = async (req, res) => {
         const formattedProducts = products.map((p) => {
             // Calculate profit margin using base cost
             const cost = p.printfulBaseCost || 0;
-            const profit = p.price - cost;
-            const profitMargin = cost > 0 ? ((profit / p.price) * 100).toFixed(1) : 0;
+            const basePrice = p.price || 0;
+            const profit = basePrice - cost;
+            const profitMargin = cost > 0 && basePrice > 0 ? ((profit / basePrice) * 100).toFixed(1) : 0;
+
+            // Get price range from variants
+            const variantPrices = (p.variants || []).map((v) => v.price).filter((pr) => pr != null);
+            const minPrice = variantPrices.length > 0 ? Math.min(...variantPrices) : basePrice;
+            const maxPrice = variantPrices.length > 0 ? Math.max(...variantPrices) : basePrice;
 
             return {
                 _id: p._id,
                 name: p.name,
                 slug: p.slug,
-                price: p.price,
+                price: basePrice,
+                minPrice,
+                maxPrice,
                 compareAtPrice: p.compareAtPrice,
                 description: p.description,
                 image: p.images?.[0]?.url || '/images/placeholder.png',
@@ -408,6 +459,15 @@ exports.getProducts = async (req, res) => {
                 isLocalOnly: !p.printfulSyncProductId,
                 printfulId: p.printfulSyncProductId,
                 variantCount: p.variants?.length || 0,
+                variants: (p.variants || []).map((v) => ({
+                    size: v.size,
+                    color: v.color,
+                    price: v.price,
+                    priceLocked: v.priceLocked || false,
+                    sku: v.sku,
+                    printfulCost: v.printfulCost || 0,
+                    printfulRetailPrice: v.printfulRetailPrice || 0,
+                })),
                 // Cost and profit data
                 printfulCost: cost,
                 profit: profit,
@@ -635,6 +695,63 @@ exports.getProductForEdit = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to get product',
+        });
+    }
+};
+
+/**
+ * Update product variant prices
+ */
+exports.updateProductVariants = async (req, res) => {
+    try {
+        const { productId } = req.params;
+        const { variants } = req.body;
+
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: 'Product not found',
+            });
+        }
+
+        // Update variant prices by matching size and color (handle empty strings)
+        if (Array.isArray(variants)) {
+            for (const updatedVariant of variants) {
+                const existingVariant = product.variants.find((v) => {
+                    const sizeMatch = v.size === updatedVariant.size;
+                    const colorMatch =
+                        (v.color || '') === (updatedVariant.color || '') ||
+                        (!v.color && !updatedVariant.color);
+                    return sizeMatch && colorMatch;
+                });
+
+                if (existingVariant) {
+                    if (updatedVariant.price != null) {
+                        existingVariant.price = parseFloat(updatedVariant.price);
+                    }
+                    if (updatedVariant.priceLocked != null) {
+                        existingVariant.priceLocked = updatedVariant.priceLocked;
+                    }
+                }
+            }
+        }
+
+        await product.save();
+
+        logger.info(`Updated variants for product ${productId}`);
+
+        res.json({
+            success: true,
+            data: {
+                variants: product.variants,
+            },
+        });
+    } catch (error) {
+        logger.error('Error updating product variants:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update product variants',
         });
     }
 };

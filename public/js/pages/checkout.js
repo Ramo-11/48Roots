@@ -200,12 +200,6 @@ async function calculateShipping() {
 
         shippingCost = result.data.shipping;
         updateTotals();
-
-        Common.showNotification(
-            `Shipping calculated: $${shippingCost.toFixed(2)}`,
-            'success',
-            2000
-        );
     } catch (err) {
         console.error('Shipping error:', err);
         Common.showNotification('Failed to calculate shipping', 'error');

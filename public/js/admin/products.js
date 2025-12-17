@@ -167,7 +167,11 @@ function renderProducts(products) {
             <td class="td-category">
                 <span class="category-badge">${formatCategory(product.category)}</span>
             </td>
-            <td class="td-price">$${product.price.toFixed(2)}</td>
+            <td class="td-price">
+                ${product.minPrice === product.maxPrice
+                    ? `$${product.minPrice.toFixed(2)}`
+                    : `$${product.minPrice.toFixed(2)} - $${product.maxPrice.toFixed(2)}`}
+            </td>
             <td class="td-cost">
                 ${product.isSynced && product.printfulCost > 0 ? `
                     <div class="cost-profit-cell">
@@ -179,7 +183,7 @@ function renderProducts(products) {
                 ` : '<span class="text-muted">-</span>'}
             </td>
             <td class="td-variants">
-                ${product.variantCount || '-'}
+                <span class="variant-count">${product.variantCount || '-'}</span>
             </td>
             <td class="td-status">
                 <span class="status-badge ${product.isActive ? 'active' : 'inactive'}">
@@ -233,6 +237,7 @@ function updateStats() {
 }
 
 let currentProductImages = [];
+let currentProductVariants = [];
 
 async function openEditModal(productId) {
     const product = allProducts.find((p) => p._id === productId);
@@ -247,23 +252,147 @@ async function openEditModal(productId) {
     document.getElementById('editProductActive').checked = product.isActive;
     document.getElementById('editProductFeatured').checked = product.isFeatured;
 
-    // Load full product data with images
+    // Load full product data with images and variants
     try {
         const response = await fetch(`/api/admin/products/${productId}/edit`);
         const result = await response.json();
         if (result.success && result.data) {
             document.getElementById('editProductSlug').value = result.data.slug || '';
             currentProductImages = result.data.images || [];
+            currentProductVariants = result.data.variants || [];
             renderImagesGrid();
+            renderVariantsEditTable();
         }
     } catch (error) {
         console.error('Error loading product details:', error);
         currentProductImages = [];
+        currentProductVariants = [];
         renderImagesGrid();
+        renderVariantsEditTable();
     }
 
     openModal('editProductModal');
 }
+
+function renderVariantsEditTable() {
+    const section = document.getElementById('variantsSection');
+    const tbody = document.getElementById('variantsEditBody');
+
+    if (!currentProductVariants || currentProductVariants.length === 0) {
+        section.style.display = 'none';
+        return;
+    }
+
+    section.style.display = 'block';
+
+    // Check if any variant has cost data
+    const hasCostData = currentProductVariants.some((v) => v.printfulCost > 0);
+
+    // Update table headers based on whether we have cost data
+    const tableHead = document.querySelector('#variantsEditTable thead tr');
+    if (tableHead) {
+        if (hasCostData) {
+            tableHead.innerHTML = `
+                <th>Size</th>
+                <th>Color</th>
+                <th>Price ($)</th>
+                <th>Cost</th>
+                <th>Profit</th>
+                <th>Lock</th>
+            `;
+        } else {
+            tableHead.innerHTML = `
+                <th>Size</th>
+                <th>Color</th>
+                <th>Price ($)</th>
+                <th>Lock</th>
+            `;
+        }
+    }
+
+    tbody.innerHTML = currentProductVariants
+        .map((v, index) => {
+            const cost = v.printfulCost || 0;
+            const price = v.price || 0;
+            const profit = price - cost;
+            const isLocked = v.priceLocked || false;
+
+            if (hasCostData) {
+                return `
+                    <tr data-variant-index="${index}">
+                        <td class="size-cell">${v.size || '-'}</td>
+                        <td class="color-cell">${v.color || '-'}</td>
+                        <td>
+                            <input type="number"
+                                   class="variant-price-input"
+                                   value="${price.toFixed(2)}"
+                                   step="0.01"
+                                   min="0"
+                                   data-index="${index}"
+                                   onchange="updateVariantProfit(${index})">
+                        </td>
+                        <td class="cost-cell">$${cost.toFixed(2)}</td>
+                        <td class="profit-cell ${profit >= 0 ? 'positive' : 'negative'}" id="profit-${index}">
+                            ${profit >= 0 ? '+' : ''}$${profit.toFixed(2)}
+                        </td>
+                        <td>
+                            <button type="button" class="btn-lock ${isLocked ? 'locked' : ''}" data-index="${index}" onclick="togglePriceLock(${index})" title="${isLocked ? 'Price locked - won\'t sync from Printful' : 'Click to lock price'}">
+                                <i class="fas ${isLocked ? 'fa-lock' : 'fa-unlock'}"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                return `
+                    <tr data-variant-index="${index}">
+                        <td class="size-cell">${v.size || '-'}</td>
+                        <td class="color-cell">${v.color || '-'}</td>
+                        <td>
+                            <input type="number"
+                                   class="variant-price-input"
+                                   value="${price.toFixed(2)}"
+                                   step="0.01"
+                                   min="0"
+                                   data-index="${index}">
+                        </td>
+                        <td>
+                            <button type="button" class="btn-lock ${isLocked ? 'locked' : ''}" data-index="${index}" onclick="togglePriceLock(${index})" title="${isLocked ? 'Price locked - won\'t sync from Printful' : 'Click to lock price'}">
+                                <i class="fas ${isLocked ? 'fa-lock' : 'fa-unlock'}"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }
+        })
+        .join('');
+}
+
+function togglePriceLock(index) {
+    if (currentProductVariants[index]) {
+        currentProductVariants[index].priceLocked = !currentProductVariants[index].priceLocked;
+        renderVariantsEditTable();
+    }
+}
+
+window.togglePriceLock = togglePriceLock;
+
+function updateVariantProfit(index) {
+    const input = document.querySelector(`.variant-price-input[data-index="${index}"]`);
+    const profitCell = document.getElementById(`profit-${index}`);
+
+    if (input && profitCell && currentProductVariants[index]) {
+        const newPrice = parseFloat(input.value) || 0;
+        const cost = currentProductVariants[index].printfulCost || 0;
+        const profit = newPrice - cost;
+
+        currentProductVariants[index].price = newPrice;
+
+        profitCell.textContent = `${profit >= 0 ? '+' : ''}$${profit.toFixed(2)}`;
+        profitCell.className = `profit-cell ${profit >= 0 ? 'positive' : 'negative'}`;
+    }
+}
+
+window.updateVariantProfit = updateVariantProfit;
 
 function renderImagesGrid() {
     const grid = document.getElementById('imagesGrid');
@@ -424,7 +553,7 @@ async function handleEditProduct(e) {
             return;
         }
 
-        // Then update images if they were modified
+        // Update images
         const imagesResponse = await fetch(`/api/admin/products/${productId}/images`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -433,13 +562,39 @@ async function handleEditProduct(e) {
 
         const imagesResult = await imagesResponse.json();
 
-        if (imagesResult.success) {
-            showToast('Product updated successfully', 'success');
-            closeModal('editProductModal');
-            await loadProducts();
-        } else {
+        if (!imagesResult.success) {
             showToast(imagesResult.message || 'Failed to update images', 'error');
+            return;
         }
+
+        // Update variant prices if there are variants
+        if (currentProductVariants && currentProductVariants.length > 0) {
+            // Collect all current prices from inputs before saving
+            const priceInputs = document.querySelectorAll('.variant-price-input');
+            priceInputs.forEach((input) => {
+                const index = parseInt(input.dataset.index, 10);
+                if (!isNaN(index) && currentProductVariants[index]) {
+                    currentProductVariants[index].price = parseFloat(input.value) || 0;
+                }
+            });
+
+            const variantsResponse = await fetch(`/api/admin/products/${productId}/variants`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ variants: currentProductVariants }),
+            });
+
+            const variantsResult = await variantsResponse.json();
+
+            if (!variantsResult.success) {
+                showToast(variantsResult.message || 'Failed to update variants', 'error');
+                return;
+            }
+        }
+
+        showToast('Product updated successfully', 'success');
+        closeModal('editProductModal');
+        await loadProducts();
     } catch (error) {
         showToast('Error updating product', 'error');
     }
