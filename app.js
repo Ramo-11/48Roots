@@ -33,13 +33,6 @@ app.use(sessionMiddleware);
 app.use(validateSession);
 // ********** End Initialization **********
 
-// ********** Schedulers **************
-if (process.env.NODE_ENV === 'production') {
-    const { initializeSchedulers } = require('./server/scheduler/scheduler');
-    initializeSchedulers();
-}
-// ********** End Schedulers **********
-
 app.use('/', router);
 
 // 404
